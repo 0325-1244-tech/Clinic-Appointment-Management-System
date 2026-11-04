@@ -1,0 +1,17 @@
+# Compiled output
+/out/
+*.class
+*.jar
+sources.txt
+
+# Runtime data (created when the app runs)
+/data/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+nbproject/
+.classpath
+.project
+.settings/
