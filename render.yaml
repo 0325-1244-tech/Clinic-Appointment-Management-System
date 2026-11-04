@@ -1,0 +1,14 @@
+# Render Blueprint: deploys CareConnect as a Docker web service.
+# In Render: New + -> Blueprint -> pick this repository.
+services:
+  - type: web
+    name: careconnect-clinic
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /vnc.html
+    envVars:
+      # Password asked for when the page opens. Render prompts you for it when the
+      # Blueprint is created. Use up to 8 characters (VNC ignores the rest).
+      - key: VNC_PASSWORD
+        sync: false

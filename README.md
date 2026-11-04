@@ -35,6 +35,21 @@ java -cp out clinic.Main
 
 **IDE (NetBeans / IntelliJ / VS Code / Eclipse):** open the folder as a project, mark `src` as the source root, and run `clinic.Main`.
 
+## Run It Online (Render)
+
+The repository includes a `Dockerfile` that runs the same desktop app on a virtual screen and shows it in the browser through noVNC.
+
+1. Sign in at <https://render.com> with your GitHub account.
+2. Click **New + → Blueprint**, connect this repository, and select it. Render reads `render.yaml`.
+3. When asked for **VNC_PASSWORD**, enter a password of **up to 8 characters**. Anyone opening the site needs it.
+4. Click **Apply**. The first build takes a few minutes.
+5. Open the service URL (for example `https://careconnect-clinic.onrender.com`), enter the password, and use the app.
+
+Notes for the free plan:
+- The service sleeps after about 15 minutes without visitors, so the first visit afterwards takes about a minute.
+- Everyone who opens the link sees and controls **the same screen**.
+- Data is reset to the sample data whenever the service restarts or redeploys.
+
 ## Project Structure
 
 ```
@@ -66,6 +81,7 @@ docs/
 ├── class-diagram.html        Open in a browser to view or print the class diagrams
 ├── diagrams/                 UML class diagrams as PNG images (for slides)
 └── screenshots/
+Dockerfile, start.sh, render.yaml   Online hosting on Render (browser-streamed desktop app)
 ```
 
 ## OOP Pillars at a Glance

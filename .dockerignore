@@ -1,0 +1,6 @@
+.git
+out
+data
+docs
+*.jar
+*.bat
