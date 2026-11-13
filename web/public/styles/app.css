@@ -610,3 +610,9 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .today-mark { display: block; font-size: 0.6875rem; font-weight: 650; color: var(--primary); text-transform: uppercase; letter-spacing: 0.04em; }
 .demo-banner { padding: 6px 16px; text-align: center; font-size: 0.8125rem; font-weight: 560; background: var(--warning-soft); color: var(--warning); border-bottom: 1px solid var(--border); }
 .cal-event.CANCELLED strong { text-decoration: line-through; }
+
+/* Reserve space for data that arrives after the first paint (prevents layout shift). */
+.dash-slot { min-height: 232px; }
+.dash-chart { min-height: 268px; }
+.stat-value, .stat .skeleton { min-height: 1.8rem; }
+.stat .skeleton { height: 1.8rem !important; }

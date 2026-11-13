@@ -20,10 +20,10 @@ export class DashboardPage extends BasePage {
     completed: h('cc-stat-card', { label: 'Completed visits', icon: 'check' }),
     fees: h('cc-stat-card', { label: 'Fees collected', icon: 'peso' }),
   };
-  #today = h('div', { 'aria-busy': 'true' });
-  #timeline = h('div', { class: 'timeline' });
-  #duty = h('ul', { class: 'duty-list' });
-  #charts = { volume: h('div'), status: h('div'), fees: h('div'), busiest: h('div') };
+  #today = h('div', { class: 'dash-slot', 'aria-busy': 'true' });
+  #timeline = h('div', { class: 'timeline', style: { 'min-height': '200px' } });
+  #duty = h('ul', { class: 'duty-list dash-slot' });
+  #charts = { volume: h('div', { class: 'dash-chart' }), status: h('div', { class: 'dash-chart' }), fees: h('div'), busiest: h('div') };
   /** @type {number | undefined} */
   #timer;
 
