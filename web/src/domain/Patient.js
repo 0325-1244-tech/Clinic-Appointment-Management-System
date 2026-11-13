@@ -40,11 +40,16 @@ export class Patient extends Person {
     this.bloodType = props.bloodType;
   }
 
+  /** @returns {CalendarDate} */
   get birthDate() {
     return this.#birthDate;
   }
 
-  /** Required, and cannot be in the future (measured in clinic time). */
+  /**
+   * Required, and cannot be in the future (measured in clinic time).
+   *
+   * @param {CalendarDate | string} value
+   */
   set birthDate(value) {
     if (value === null || value === undefined || value === '') {
       throw new ValidationError('Birth date is required.', { field: 'birthDate' });

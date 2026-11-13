@@ -2,7 +2,7 @@
 import { Appointment } from './Appointment.js';
 import { abstractClass, abstractMethod } from './contracts.js';
 import { NotFoundError } from './errors.js';
-import { MedicalStaff } from './MedicalStaff.js';
+/** @typedef {import('./MedicalStaff.js').MedicalStaff} MedicalStaff */
 import { Patient } from './Patient.js';
 import { StaffFactory } from './StaffFactory.js';
 

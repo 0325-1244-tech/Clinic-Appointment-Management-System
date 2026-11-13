@@ -64,22 +64,19 @@ export class Enumeration {
 
   /**
    * All constants of the subclass this is called on, in declaration order.
+   * (Typed loosely because JSDoc cannot express "an instance of the calling subclass".)
    *
-   * @template {Enumeration} T
-   * @this {{ new (...args: any[]): T }}
-   * @returns {T[]}
+   * @returns {any[]}
    */
   static values() {
-    return /** @type {T[]} */ (Object.values(this).filter((v) => v instanceof this));
+    return Object.values(this).filter((v) => v instanceof this);
   }
 
   /**
    * Looks a constant up by its code (or returns the argument if it already is one).
    *
-   * @template {Enumeration} T
-   * @this {{ new (...args: any[]): T, values(): T[], name: string }}
-   * @param {string | T} code
-   * @returns {T}
+   * @param {unknown} code
+   * @returns {any} a constant of the subclass this is called on
    */
   static from(code) {
     if (code instanceof this) {

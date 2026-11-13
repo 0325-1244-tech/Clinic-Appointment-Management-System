@@ -12,7 +12,7 @@ import { StaffFactory } from '../domain/StaffFactory.js';
 import { normalizeKeyword } from '../domain/text.js';
 import { CalendarDate } from '../domain/time/CalendarDate.js';
 import { Clock } from '../domain/time/Clock.js';
-import { DayOfWeek } from '../domain/time/DayOfWeek.js';
+/** @typedef {import('../domain/time/DayOfWeek.js').DayOfWeek} DayOfWeek */
 import { TimeOfDay } from '../domain/time/TimeOfDay.js';
 
 /**

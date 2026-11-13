@@ -111,7 +111,11 @@ export class MedicalStaff extends Person {
     this.#licenseNumber = requireText(value, 'License number', 'licenseNumber');
   }
 
-  /** A sorted, frozen copy, so outside code cannot change the schedule directly. */
+  /**
+   * A sorted, frozen copy, so outside code cannot change the schedule directly.
+   *
+   * @returns {readonly DayOfWeek[]}
+   */
   get workingDays() {
     return Object.freeze([...this.#workingDays].sort((a, b) => a.number - b.number));
   }
