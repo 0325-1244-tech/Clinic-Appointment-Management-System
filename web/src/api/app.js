@@ -119,7 +119,8 @@ export function createApp(context, { trustProxy = false, log } = {}) {
     next();
   });
 
-  const staticOptions = { maxAge: '1h', index: 'index.html' };
+  // Cache static files for an hour in production; always revalidate during development.
+  const staticOptions = { maxAge: context.config.secureCookies ? '1h' : 0, index: 'index.html' };
   app.use('/domain', express.static(path.join(WEB_ROOT, 'src', 'domain'), staticOptions));
   app.use(express.static(path.join(WEB_ROOT, 'public'), staticOptions));
   app.get('/board', (_req, res) => res.sendFile(path.join(WEB_ROOT, 'public', 'board.html')));

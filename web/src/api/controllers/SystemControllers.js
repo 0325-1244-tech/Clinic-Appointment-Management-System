@@ -1,7 +1,6 @@
 // @ts-check
 import { DEFAULT_ACCOUNTS } from '../../auth/AuthService.js';
 import { Permission } from '../../auth/AccessPolicy.js';
-import { AuthenticationError } from '../../auth/errors.js';
 import { AppointmentStatus } from '../../domain/AppointmentStatus.js';
 import { AppointmentType } from '../../domain/AppointmentType.js';
 import { Patient } from '../../domain/Patient.js';
@@ -70,12 +69,10 @@ export class AuthController extends Controller {
       res.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, sameSite: 'strict', secure: this.context.config.secureCookies });
       res.status(204).end();
     });
+    // Returns { user: null } when signed out, so the app can check without logging an error.
     r.get('/me', (req, res) => {
       const user = /** @type {import('../middleware.js').AppRequest} */ (req).user;
-      if (!user) {
-        throw new AuthenticationError('Please sign in to continue.');
-      }
-      res.json({ user: this.#me(user) });
+      res.json({ user: user ? this.#me(user) : null });
     });
   }
 

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CareConnect waiting-room queue board.">
+  <title>Now Serving · CareConnect</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles/app.css">
+  <link rel="stylesheet" href="/styles/board.css">
+  <script type="module" src="/app/board.js"></script>
+</head>
+<body class="board">
+  <header class="board-head">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">+</span><span class="brand-name">CareConnect</span></div>
+    <h1>Now serving</h1>
+    <div class="board-clock"><time id="board-time">--:--</time><span id="board-date"></span></div>
+  </header>
+  <main id="board" class="board-grid" aria-live="polite" aria-busy="true"></main>
+  <footer class="board-foot"><span id="board-status" role="status">Connecting…</span><span>Please wait for your ticket number to be called.</span></footer>
+</body>
+</html>

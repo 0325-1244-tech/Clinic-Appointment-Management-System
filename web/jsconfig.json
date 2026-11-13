@@ -3,7 +3,11 @@
     "target": "es2024",
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "lib": ["es2024", "dom", "dom.iterable"],
+    "lib": [
+      "es2024",
+      "dom",
+      "dom.iterable"
+    ],
     "checkJs": true,
     "allowJs": true,
     "noEmit": true,
@@ -12,7 +16,19 @@
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "/domain/*": [
+        "./src/domain/*"
+      ]
+    }
   },
-  "include": ["server.js", "src/**/*.js", "public/app/**/*.js", "scripts/**/*.js"]
+  "include": [
+    "server.js",
+    "src/**/*.js",
+    "public/app/**/*.js",
+    "scripts/**/*.js"
+  ]
 }

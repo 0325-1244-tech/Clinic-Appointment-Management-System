@@ -77,7 +77,7 @@ describe('authentication', () => {
       assert.equal(res.data.error.code, 'UNAUTHENTICATED');
     }
     const me = await srv.client().get('/api/auth/me');
-    assert.equal(me.status, 401);
+    assert.deepEqual(me.data, { user: null });
   });
 
   it('signs in with an httpOnly, SameSite=Strict cookie and reports permissions', async () => {
@@ -91,7 +91,7 @@ describe('authentication', () => {
     const me = await c.get('/api/auth/me');
     assert.equal(me.data.user.username, 'admin');
     assert.equal((await c.post('/api/auth/logout')).status, 204);
-    assert.equal((await c.get('/api/auth/me')).status, 401);
+    assert.equal((await c.get('/api/auth/me')).data.user, null);
   });
 
   it('rejects a wrong password with the same message as an unknown user', async () => {

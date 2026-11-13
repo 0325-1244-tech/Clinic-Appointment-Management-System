@@ -1,0 +1,22 @@
+/* Waiting-room queue board: large type, high contrast, readable from across a room. */
+body.board { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+.board-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px 40px; border-bottom: 1px solid var(--border); }
+.board-head .brand { padding: 0; }
+.board-head .brand-mark { font: 700 22px/1 var(--font-display); }
+.board-head h1 { font-size: clamp(1.6rem, 3vw, 2.6rem); }
+.board-clock { text-align: right; }
+.board-clock time { display: block; font: 650 clamp(1.6rem, 3vw, 2.6rem)/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.board-clock span { color: var(--text-3); }
+.board-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 28px 40px; align-content: start; }
+.board-card { padding: 22px 24px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--border); border-top: 6px solid var(--role-color, var(--primary)); }
+.board-card h2 { font-size: 1.25rem; }
+.board-card .area { color: var(--text-3); margin-top: 2px; }
+.board-ticket { margin: 18px 0 6px; font: 700 clamp(3rem, 6vw, 4.6rem)/1 var(--font-display); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.board-ticket.idle { font-size: 1.4rem; font-weight: 560; color: var(--text-3); }
+.board-initials { font-size: 1.25rem; color: var(--text-2); }
+.board-next { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--text-2); font-size: 1.05rem; }
+.board-next strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.board-card.called { animation: called 1.6s var(--ease-out) 2; }
+@keyframes called { 0%, 100% { box-shadow: none; } 40% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 45%, transparent); } }
+.board-foot { display: flex; justify-content: space-between; gap: 16px; padding: 14px 40px; color: var(--text-3); border-top: 1px solid var(--border); }
+@media (max-width: 640px) { .board-head, .board-grid, .board-foot { padding-left: 16px; padding-right: 16px; } .board-foot { flex-direction: column; } }
