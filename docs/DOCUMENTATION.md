@@ -1,41 +1,49 @@
-# CareConnect: Clinic Appointment Management System
+# CareConnect: Clinic Appointment Management System (JavaScript Web Version)
 
 **Object-Oriented Programming Final Project, Scenario 3: Clinic Appointment Management System**
 Laguna State Polytechnic University
 
 | Group Members | Role / Contribution |
 |---|---|
-| _Member 1 Name_ | _e.g. Model layer (Person, Patient, MedicalStaff, Doctor, Dentist, Nurse)_ |
-| _Member 2 Name_ | _e.g. Appointment logic, ClinicService, Repository and data storage_ |
-| _Member 3 Name_ | _e.g. User interface (panels, dialogs), class diagram and documentation_ |
+| _Member 1 Name_ | _e.g. Domain classes (Person, Patient, MedicalStaff, Doctor, Dentist, Nurse, Appointment)_ |
+| _Member 2 Name_ | _e.g. ClinicService, repositories, REST API, tests_ |
+| _Member 3 Name_ | _e.g. Browser pages, dialogs, class diagrams and documentation_ |
+
+> This branch (`javascript-version`) contains the web version in the `web/` folder. The original Java Swing
+> version is unchanged in `src/` (and on the `main` branch).
 
 ---
 
 ## 1. Project Overview
 
-**CareConnect** is a desktop application, written in Java (Swing), that manages the daily appointment work of a small clinic: registering patients, keeping a list of medical personnel and their schedules, booking and tracking appointments, and keeping a history of every visit.
+**CareConnect** is a web application that manages the daily appointment work of a small clinic:
+registering patients, keeping a list of medical personnel and their schedules, booking and tracking
+appointments, and keeping a history of every visit. It runs in any browser and is deployed as a
+Node.js web service on Render.
+
+It is a rebuild of the team's Java Swing desktop version in **JavaScript**. Every feature and business
+rule of the Java version was kept and covered by automated tests, and the object-oriented design was
+carried over class by class: the same abstract classes, subclasses, overridden methods and "interfaces".
 
 ### The problem it addresses
 
-Many small clinics and school infirmaries still use paper logbooks or loose spreadsheets for appointments. This leads to common problems:
+Many small clinics and school infirmaries still use paper logbooks or loose spreadsheets for appointments:
 
-- **Double booking.** Two patients are given the same doctor at the same time, or one patient is booked in two places at once.
-- **Bookings outside working hours.** Appointments are set on a doctor's day off or after the shift ends.
+- **Double booking.** Two patients get the same doctor at the same time, or one patient is booked in two places at once.
+- **Bookings outside working hours.** Appointments land on a doctor's day off or after the shift ends.
 - **Lost or scattered records.** It is hard to see a patient's past visits, findings and missed appointments.
 - **Inconsistent fees.** Fees are computed by hand and vary depending on who computes them.
-- **No overview.** Staff cannot quickly see today's schedule or who is on duty.
+- **No overview.** Staff cannot quickly see today's schedule, who is on duty, or who is waiting.
 
 ### What the system does
 
-CareConnect solves these problems by:
-
-- Storing patients and medical staff (Doctors, Dentists and Nurses) with validated information.
-- Offering **only the open time slots** when booking. A slot is open when it falls within the staff member's working days and shift and does not clash with any other appointment.
-- Blocking double booking of both the medical staff member and the patient.
-- Tracking each appointment through its life cycle: **Scheduled → Completed / Cancelled / No-Show**, with findings or reasons recorded.
-- Computing fees automatically from the type of staff (Doctor, Dentist, Nurse) and the type of visit.
-- Keeping a searchable **appointment-records history** per patient that can be exported to CSV.
-- Saving all data to a file automatically, so nothing is lost when the program closes.
+- Stores patients and medical staff (Doctors, Dentists and Nurses) with validated information.
+- Offers **only the open time slots** when booking, and blocks double booking of both the staff member and the patient.
+- Tracks each appointment through its life cycle: **Scheduled → Completed / Cancelled / No-Show**.
+- Computes fees automatically from the type of staff and the type of visit.
+- Keeps a searchable **appointment-records history** per patient, exportable to CSV.
+- Adds what a web version makes possible: sign-in with roles, a calendar with drag-to-reschedule, dashboard
+  charts, patient profiles, an audit log, and a live "now serving" queue board for the waiting area.
 
 ---
 
@@ -43,652 +51,692 @@ CareConnect solves these problems by:
 
 ### General Objective
 
-To develop a desktop-based **Clinic Appointment Management System** in Java that applies the four pillars of Object-Oriented Programming (Encapsulation, Inheritance, Polymorphism and Abstraction) to make patient registration, medical-personnel management, appointment scheduling and record keeping in a clinic faster and more reliable.
+To develop a web-based **Clinic Appointment Management System** in JavaScript that applies the four pillars of
+Object-Oriented Programming (Encapsulation, Inheritance, Polymorphism and Abstraction) to make patient
+registration, medical-personnel management, appointment scheduling and record keeping in a clinic faster
+and more reliable, and that anyone can open in a browser.
 
 ### Specific Objectives
 
-1. **Patient registration.** Register, edit, search and remove patient records, with validation of names, birth date and Philippine mobile numbers.
-2. **Medical-personnel management.** Manage Doctors, Dentists and Nurses, including their specialization or area, PRC license number, working days and shift hours. Staff can be activated or deactivated.
-3. **Conflict-free appointment scheduling.** Book appointments only in available time slots, and prevent double booking of the same medical staff member or the same patient.
-4. **Appointment tracking.** Reschedule, complete (with findings), cancel (with a reason) or mark appointments as no-show, and allow these changes only while an appointment is still scheduled.
-5. **Automatic fee computation.** Compute fees from the staff member's base fee and the appointment type (Consultation, Follow-up, Check-up, Emergency).
-6. **Appointment records.** Keep a history of completed, cancelled and no-show appointments per patient, with summary totals and CSV export.
-7. **Data persistence.** Save all records to a file automatically, and load them again when the system starts.
-8. **Demonstrate OOP.** Apply encapsulation, inheritance, polymorphism and abstraction in the actual source code, and reflect the design in a UML class diagram.
+1. **Patient registration.** Register, edit, search and remove patients, validating names, birth date and Philippine mobile numbers.
+2. **Medical-personnel management.** Manage Doctors, Dentists and Nurses with their specialization or area, PRC license, working days and shift; activate or deactivate them.
+3. **Conflict-free scheduling.** Book only available slots and prevent double booking of the same staff member or patient.
+4. **Appointment tracking.** Reschedule, complete (with findings), cancel (with a reason) or mark no-show, only while an appointment is still scheduled.
+5. **Automatic fee computation.** Staff base fee × appointment-type multiplier.
+6. **Appointment records.** History of completed, cancelled and no-show visits per patient, with totals and CSV export.
+7. **Secure, role-based access.** Admin, Receptionist and Doctor accounts, each seeing only what it should.
+8. **Demonstrate OOP in JavaScript.** Apply the four pillars in real code and keep the UML class diagrams in step with it (checked automatically by `npm run check:diagrams`).
 
 ---
 
-## 3. Class Diagram
+## 3. Architecture
 
-The system follows a **layered design**:
+```mermaid
+flowchart LR
+  subgraph Browser
+    Pages["Pages (BasePage subclasses)"] --> Api[ApiClient]
+    Pages --> Dialogs["Dialogs (FormDialog subclasses)"]
+    Api --> DomainB["Domain classes (same files as the server)"]
+  end
+  subgraph Server["Node.js server (Express)"]
+    Controllers["Controllers (Controller subclasses)"] --> Service[ClinicService]
+    Controllers --> Auth[AuthService + AccessPolicy]
+    Service --> Repos["Repository subclasses"]
+    Service -- "change events" --> Audit[AuditLog]
+    Service -- "change events" --> Queue[QueueService]
+    Repos --> Files[("JSON files / SQLite")]
+  end
+  Api -- "REST / JSON" --> Controllers
+  Board["Queue board"] -- "Server-Sent Events" --> Controllers
+```
 
-| Layer | Package | Responsibility |
+| Layer | Folder | What it holds |
 |---|---|---|
-| Model | `clinic.model` | The clinic's real-world objects: people, appointments, enums and interfaces |
-| Repository | `clinic.repository` | Generic storage of objects by ID |
-| Data | `clinic.data` | Groups the repositories, saves to and loads from a file, creates sample data |
-| Service | `clinic.service` | Business rules (validation, conflict checking, statistics) |
-| User Interface | `clinic.ui.*` | Swing windows, pages, dialogs and tables |
+| Domain | `web/src/domain/` | Plain ES classes with no framework imports. **The browser loads the very same files** (served at `/domain/`) to validate forms and to turn API data back into real `Doctor`, `Patient` and `Appointment` objects. |
+| Repositories | `web/src/repositories/` | `Repository` (abstract) → `InMemoryRepository` → `JsonFileRepository` / `SqliteRepository`. |
+| Services | `web/src/services/` | `ClinicService` (every business rule), `StatsService`, `AuditLog`, `QueueService`, `SampleDataLoader`. |
+| Sign-in and roles | `web/src/auth/` | `AuthService`, `PasswordHasher` (scrypt), `SessionStore`, `AccessPolicy` and its role subclasses. |
+| REST API | `web/src/api/` | Express app, one `Controller` subclass per resource, request validation and error handling. |
+| Browser app | `web/public/app/` | `App`, pages, Web Components (`<cc-data-table>`, `<cc-stat-card>`), dialogs, charts, calendar, command palette. |
 
-**Visibility legend:** `+` public · `-` private · `#` protected · `*` abstract method · `$` static member
+**Time zone.** Render's servers run on UTC, but the clinic is in the Philippines. Every "today" and "now"
+comes from a `Clock` object set to `Asia/Manila`, and the tests use a `FixedClock` so the past/future rules
+are tested on any day. Dates and times are the value objects `CalendarDate` and `TimeOfDay` (the
+JavaScript counterparts of Java's `LocalDate` and `LocalTime`).
 
-### 3.1 Domain and Service Class Diagram (core system)
+---
+
+## 4. Class Diagrams
+
+The diagrams below list the important members of each class. `-` is private (`#field` in JavaScript),
+`+` is public, `*` marks an abstract method, `$` marks a static member. Every class, member and
+`extends` arrow shown here is checked against the source code by `npm run check:diagrams`.
+
+### 4.1 People and medical staff
 
 ```mermaid
 classDiagram
-    direction TB
-
-    class Identifiable {
-        <<interface>>
-        +getId() String
-    }
-    class Searchable {
-        <<interface>>
-        +matches(keyword: String) boolean
-    }
-    class Billable {
-        <<interface>>
-        +computeFee() double
-    }
-
-    class Person {
-        <<abstract>>
-        -id: String
-        -firstName: String
-        -lastName: String
-        -contactNumber: String
-        -email: String
-        #Person(id, firstName, lastName, contactNumber, email)
-        +getId() String
-        +getFirstName() String
-        +setFirstName(firstName: String) void
-        +getLastName() String
-        +setLastName(lastName: String) void
-        +getContactNumber() String
-        +setContactNumber(contactNumber: String) void
-        +getEmail() String
-        +setEmail(email: String) void
-        +getFullName() String
-        +getRole()* String
-        +getDetails()* String
-        +matches(keyword: String) boolean
-        #requireText(value: String, fieldName: String)$ String
-        +equals(other: Object) boolean
-        +hashCode() int
-        +toString() String
-    }
-
-    class Patient {
-        +GENDERS: String[]$
-        +BLOOD_TYPES: String[]$
-        -birthDate: LocalDate
-        -gender: String
-        -address: String
-        -bloodType: String
-        +Patient(id, firstName, lastName, contactNumber, email, birthDate, gender, address, bloodType)
-        +getBirthDate() LocalDate
-        +setBirthDate(birthDate: LocalDate) void
-        +getAge() int
-        +getGender() String
-        +setGender(gender: String) void
-        +getAddress() String
-        +setAddress(address: String) void
-        +getBloodType() String
-        +setBloodType(bloodType: String) void
-        +getRole() String
-        +getDetails() String
-        +matches(keyword: String) boolean
-    }
-
-    class MedicalStaff {
-        <<abstract>>
-        -licenseNumber: String
-        -workingDays: EnumSet~DayOfWeek~
-        -shiftStart: LocalTime
-        -shiftEnd: LocalTime
-        -active: boolean
-        #MedicalStaff(id, firstName, lastName, contactNumber, email, licenseNumber, workingDays, shiftStart, shiftEnd)
-        +getConsultationFee()* double
-        +getSlotDurationMinutes()* int
-        +getServiceAreaLabel()* String
-        +getServiceArea()* String
-        +setServiceArea(serviceArea: String)* void
-        +getDisplayName() String
-        +getLicenseNumber() String
-        +setLicenseNumber(licenseNumber: String) void
-        +getWorkingDays() Set~DayOfWeek~
-        +setWorkingDays(days: Set~DayOfWeek~) void
-        +getShiftStart() LocalTime
-        +getShiftEnd() LocalTime
-        +setShift(start: LocalTime, end: LocalTime) void
-        +isActive() boolean
-        +setActive(active: boolean) void
-        +isAvailableOn(date: LocalDate) boolean
-        +getTimeSlots() List~LocalTime~
-        +getWorkingDaysText() String
-        +getShiftText() String
-        +getDetails() String
-        +matches(keyword: String) boolean
-        +toString() String
-    }
-
-    class Doctor {
-        +AREA_LABEL: String$
-        +SPECIALIZATIONS: String[]$
-        -GENERAL_FEE: double$
-        -SPECIALIST_FEE: double$
-        -SLOT_MINUTES: int$
-        -specialization: String
-        +Doctor(id, firstName, lastName, contactNumber, email, licenseNumber, specialization, workingDays, shiftStart, shiftEnd)
-        +isGeneralPractitioner() boolean
-        +getConsultationFee() double
-        +getSlotDurationMinutes() int
-        +getServiceAreaLabel() String
-        +getServiceArea() String
-        +setServiceArea(specialization: String) void
-        +getRole() String
-        +getDisplayName() String
-    }
-
-    class Dentist {
-        +AREA_LABEL: String$
-        +ROOMS: String[]$
-        -DENTAL_FEE: double$
-        -SLOT_MINUTES: int$
-        -clinicRoom: String
-        +Dentist(id, firstName, lastName, contactNumber, email, licenseNumber, clinicRoom, workingDays, shiftStart, shiftEnd)
-        +getConsultationFee() double
-        +getSlotDurationMinutes() int
-        +getServiceAreaLabel() String
-        +getServiceArea() String
-        +setServiceArea(clinicRoom: String) void
-        +getRole() String
-        +getDisplayName() String
-    }
-
-    class Nurse {
-        +AREA_LABEL: String$
-        +DEPARTMENTS: String[]$
-        -NURSING_FEE: double$
-        -SLOT_MINUTES: int$
-        -department: String
-        +Nurse(id, firstName, lastName, contactNumber, email, licenseNumber, department, workingDays, shiftStart, shiftEnd)
-        +getConsultationFee() double
-        +getSlotDurationMinutes() int
-        +getServiceAreaLabel() String
-        +getServiceArea() String
-        +setServiceArea(department: String) void
-        +getRole() String
-        +getDisplayName() String
-    }
-
-    class StaffFactory {
-        +ROLES: String[]$
-        -StaffFactory()
-        +create(role, id, firstName, lastName, contactNumber, email, licenseNumber, serviceArea, workingDays, shiftStart, shiftEnd)$ MedicalStaff
-        +serviceAreaLabel(role: String)$ String
-        +serviceAreaOptions(role: String)$ String[]
-    }
-
-    class Appointment {
-        -id: String
-        -patient: Patient
-        -staff: MedicalStaff
-        -type: AppointmentType
-        -reason: String
-        -createdAt: LocalDateTime
-        -date: LocalDate
-        -time: LocalTime
-        -status: AppointmentStatus
-        -remarks: String
-        +Appointment(id, patient, staff, date, time, type, reason)
-        +estimateFee(staff: MedicalStaff, type: AppointmentType)$ double
-        +computeFee() double
-        +reschedule(newDate: LocalDate, newTime: LocalTime) void
-        +complete(findings: String) void
-        +cancel(cancelReason: String) void
-        +markNoShow() void
-        -ensureScheduled(action: String) void
-        +isActive() boolean
-        +getEndTime() LocalTime
-        +getDateTime() LocalDateTime
-        +overlapsWith(otherDate: LocalDate, start: LocalTime, end: LocalTime) boolean
-        +getSummary() String
-        +matches(keyword: String) boolean
-        +getId() String
-        +getPatient() Patient
-        +getStaff() MedicalStaff
-        +getDate() LocalDate
-        +getTime() LocalTime
-        +getType() AppointmentType
-        +getReason() String
-        +getStatus() AppointmentStatus
-        +getRemarks() String
-        +getCreatedAt() LocalDateTime
-    }
-
-    class AppointmentStatus {
-        <<enumeration>>
-        SCHEDULED
-        COMPLETED
-        CANCELLED
-        NO_SHOW
-        -label: String
-        +getLabel() String
-    }
-
-    class AppointmentType {
-        <<enumeration>>
-        CONSULTATION
-        FOLLOW_UP
-        CHECK_UP
-        EMERGENCY
-        -label: String
-        -feeMultiplier: double
-        +getLabel() String
-        +getFeeMultiplier() double
-    }
-
-    class Repository~T~ {
-        <<interface>>
-        +nextId() String
-        +add(item: T) void
-        +remove(id: String) boolean
-        +findById(id: String) Optional~T~
-        +findAll() List~T~
-        +findWhere(condition: Predicate~T~) List~T~
-        +count() int
-    }
-
-    class InMemoryRepository~T~ {
-        -items: Map~String,T~
-        -prefix: String
-        -counter: int
-        +InMemoryRepository(prefix: String)
-        +nextId() String
-        +add(item: T) void
-        +remove(id: String) boolean
-        +findById(id: String) Optional~T~
-        +findAll() List~T~
-        +findWhere(condition: Predicate~T~) List~T~
-        +count() int
-    }
-
-    class ClinicDatabase {
-        -patients: Repository~Patient~
-        -staff: Repository~MedicalStaff~
-        -appointments: Repository~Appointment~
-        +getPatients() Repository~Patient~
-        +getStaff() Repository~MedicalStaff~
-        +getAppointments() Repository~Appointment~
-    }
-
-    class FileStorage {
-        -file: Path
-        +FileStorage(file: Path)
-        +getFile() Path
-        +exists() boolean
-        +load() ClinicDatabase
-        +save(database: ClinicDatabase) void
-    }
-
-    class SampleDataLoader {
-        -SampleDataLoader()
-        +createSampleDatabase()$ ClinicDatabase
-    }
-
-    class Exception
-    class ValidationException {
-        +ValidationException(message: String)
-    }
-
-    class ClinicService {
-        -BY_SCHEDULE: Comparator~Appointment~$
-        -database: ClinicDatabase
-        -storage: FileStorage
-        +ClinicService(database: ClinicDatabase, storage: FileStorage)
-        +generatePatientId() String
-        +addPatient(patient: Patient) void
-        +removePatient(patient: Patient) void
-        +getPatients() List~Patient~
-        +searchPatients(keyword: String) List~Patient~
-        +generateStaffId() String
-        +addStaff(staff: MedicalStaff) void
-        +updateStaffSchedule(staff, days, start, end) void
-        +setStaffActive(staff: MedicalStaff, active: boolean) void
-        +removeStaff(staff: MedicalStaff) void
-        +getStaff() List~MedicalStaff~
-        +getActiveStaff() List~MedicalStaff~
-        +searchStaff(keyword: String) List~MedicalStaff~
-        +getStaffOnDuty(date: LocalDate) List~MedicalStaff~
-        +bookAppointment(patient, staff, date, time, type, reason) Appointment
-        +rescheduleAppointment(appointment, newDate, newTime) void
-        +completeAppointment(appointment, findings) void
-        +cancelAppointment(appointment, reason) void
-        +markNoShow(appointment: Appointment) void
-        +getAvailableSlots(staff, date) List~LocalTime~
-        +getAvailableSlots(staff, date, exclude) List~LocalTime~
-        +findAppointments(date: LocalDate) List~Appointment~
-        +findAppointments(patient: Patient) List~Appointment~
-        +findAppointments(staff: MedicalStaff) List~Appointment~
-        +findAppointments(status: AppointmentStatus) List~Appointment~
-        +findAppointments(keyword: String) List~Appointment~
-        +getAllAppointments() List~Appointment~
-        +getUpcomingAppointments() List~Appointment~
-        +computeTotal(items: List~Billable~) double
-        +getCollectedFees() double
-        +getPatientCount() int
-        +getActiveStaffCount() int
-        +saveChanges() void
-        -query(condition: Predicate~Appointment~) List~Appointment~
-        -ensureScheduled(appointment: Appointment) void
-        -hasConflict(owner, date, start, end, exclude) boolean
-        -validateSchedule(patient, staff, date, time, exclude) void
-    }
-
-    Identifiable <|.. Person
-    Searchable <|.. Person
-    Person <|-- Patient
-    Person <|-- MedicalStaff
-    MedicalStaff <|-- Doctor
-    MedicalStaff <|-- Dentist
-    MedicalStaff <|-- Nurse
-    Identifiable <|.. Appointment
-    Billable <|.. Appointment
-    Searchable <|.. Appointment
-    Appointment "0..*" --> "1" Patient : patient
-    Appointment "0..*" --> "1" MedicalStaff : attending staff
-    Appointment --> "1" AppointmentType : type
-    Appointment --> "1" AppointmentStatus : status
-    StaffFactory ..> MedicalStaff : creates
-    Repository <|.. InMemoryRepository
-    Repository ..> Identifiable : T extends
-    ClinicDatabase *-- "3" Repository : contains
-    FileStorage ..> ClinicDatabase : saves / loads
-    SampleDataLoader ..> ClinicDatabase : creates
-    ClinicService --> "1" ClinicDatabase
-    ClinicService --> "1" FileStorage
-    ClinicService ..> ValidationException : throws
-    Exception <|-- ValidationException
+  class Person {
+    <<abstract>>
+    -id string
+    -firstName string
+    -lastName string
+    -contactNumber string
+    -email string
+    +fullName string
+    +initials string
+    +getRole()* string
+    +getDetails()* string
+    +matches(keyword) boolean
+    +equals(other) boolean
+  }
+  class Patient {
+    -birthDate CalendarDate
+    -gender string
+    -address string
+    -bloodType string
+    +GENDERS$ string[]
+    +BLOOD_TYPES$ string[]
+    +age number
+    +getRole() string
+    +getDetails() string
+    +matches(keyword) boolean
+  }
+  class MedicalStaff {
+    <<abstract>>
+    -licenseNumber string
+    -workingDays Set~DayOfWeek~
+    -shiftStart TimeOfDay
+    -shiftEnd TimeOfDay
+    -active boolean
+    +getConsultationFee()* number
+    +getSlotDurationMinutes()* number
+    +getServiceAreaLabel()* string
+    +serviceArea* string
+    +getDisplayName() string
+    +setShift(start, end)
+    +getTimeSlots() TimeOfDay[]
+    +isAvailableOn(date) boolean
+    +isValidSlot(time) boolean
+    +getWorkingDaysText() string
+    +getShiftText() string
+    +getDetails() string
+    +matches(keyword) boolean
+  }
+  class Doctor {
+    -specialization string
+    +SPECIALIZATIONS$ string[]
+    +isGeneralPractitioner() boolean
+    +getConsultationFee() number
+    +getSlotDurationMinutes() number
+    +getServiceAreaLabel() string
+    +getRole() string
+    +getDisplayName() string
+  }
+  class Dentist {
+    -clinicRoom string
+    +ROOMS$ string[]
+    +getConsultationFee() number
+    +getSlotDurationMinutes() number
+    +getServiceAreaLabel() string
+    +getRole() string
+    +getDisplayName() string
+  }
+  class Nurse {
+    -department string
+    +DEPARTMENTS$ string[]
+    +getConsultationFee() number
+    +getSlotDurationMinutes() number
+    +getServiceAreaLabel() string
+    +getRole() string
+    +getDisplayName() string
+  }
+  class StaffFactory {
+    +ROLES$ string[]
+    +create(role, props)$ MedicalStaff
+    +serviceAreaLabel(role)$ string
+    +serviceAreaOptions(role)$ string[]
+  }
+  Person <|-- Patient
+  Person <|-- MedicalStaff
+  MedicalStaff <|-- Doctor
+  MedicalStaff <|-- Dentist
+  MedicalStaff <|-- Nurse
+  StaffFactory ..> MedicalStaff : creates
 ```
 
-### 3.2 User-Interface Class Diagram
-
-Shows the inheritance structure of the Swing layer and its key members.
+### 4.2 Appointments, enums and "interfaces"
 
 ```mermaid
 classDiagram
-    direction TB
-
-    class JFrame
-    class JPanel
-    class JDialog
-    class JButton
-    class JTextField
-    class AbstractTableModel
-    class DefaultTableCellRenderer
-
-    class MainFrame {
-        -cards: CardLayout
-        -pageArea: JPanel
-        -navigation: Map~BasePanel,NavButton~
-        -recordsPanel: RecordsPanel
-        +MainFrame(service: ClinicService)
-        -buildSidebar() JPanel
-        -showPage(page: BasePanel) void
-        -openRecordsFor(patient: Patient) void
-    }
-
-    class BasePanel {
-        <<abstract>>
-        #service: ClinicService
-        -headerActions: JPanel
-        #BasePanel(service: ClinicService)
-        +getTitle()* String
-        +getSubtitle()* String
-        +refreshData()* void
-        #addHeaderAction(component: JComponent) void
-        #owner() Window
-        #attempt(call: ServiceCall) boolean
-        #showError(message: String) void
-        #showInfo(message: String) void
-        #confirm(message: String) boolean
-        #promptText(title: String, message: String) String
-        #showDetails(title: String, text: String) void
-        #toolbar(left: JComponent[], right: JComponent...) JPanel
-        #tableCard(table: JTable, top: JComponent) RoundedPanel
-        #setColumnWidths(table: JTable, widths: int...)$ void
-        #onDoubleClick(table: JTable, action: Runnable)$ void
-        #selected(table: JTable, model: EntityTableModel~T~)$ T
-    }
-
-    class ServiceCall {
-        <<interface>>
-        +run() void
-    }
-
-    class DashboardPanel {
-        +getTitle() String
-        +getSubtitle() String
-        +refreshData() void
-    }
-    class PatientPanel {
-        +PatientPanel(service, openRecords: Consumer~Patient~)
-        +getTitle() String
-        +getSubtitle() String
-        +refreshData() void
-    }
-    class StaffPanel {
-        +getTitle() String
-        +getSubtitle() String
-        +refreshData() void
-    }
-    class AppointmentPanel {
-        +getTitle() String
-        +getSubtitle() String
-        +refreshData() void
-    }
-    class RecordsPanel {
-        +getTitle() String
-        +getSubtitle() String
-        +refreshData() void
-        +selectPatient(patient: Patient) void
-    }
-
-    class FormDialog {
-        <<abstract>>
-        -form: JPanel
-        -row: int
-        -saved: boolean
-        #FormDialog(owner: Window, title: String)
-        #onSave()* void
-        #getSaveLabel() String
-        #addField(label: String, field: JComponent) void
-        +showDialog() boolean
-        -handleSave() void
-        #textField(value: String)$ JTextField
-    }
-    class PatientDialog {
-        +PatientDialog(owner, service, existing: Patient)
-        #onSave() void
-        #getSaveLabel() String
-    }
-    class StaffDialog {
-        +StaffDialog(owner, service, existing: MedicalStaff)
-        #onSave() void
-        #getSaveLabel() String
-    }
-    class AppointmentDialog {
-        +AppointmentDialog(owner, service, existing: Appointment)
-        +AppointmentDialog(owner, service, existing: Appointment, preselected: Patient)
-        #onSave() void
-        #getSaveLabel() String
-    }
-
-    class EntityTableModel~T~ {
-        <<abstract>>
-        -items: List~T~
-        #getColumnNames()* String[]
-        #getColumnValue(item: T, column: int)* Object
-        +setItems(newItems: List~T~) void
-        +getItemAt(row: int) T
-        +getRowCount() int
-        +getColumnCount() int
-        +getColumnName(column: int) String
-        +getValueAt(row: int, column: int) Object
-        +isCellEditable(row: int, column: int) boolean
-    }
-    class PatientTableModel
-    class StaffTableModel
-    class AppointmentTableModel
-    class RecordTableModel
-
-    class RoundedButton
-    class RoundedPanel
-    class StatCard
-    class NavButton
-    class HintTextField
-    class StyledCellRenderer
-    class UITheme {
-        <<utility>>
-    }
-
-    JFrame <|-- MainFrame
-    JPanel <|-- BasePanel
-    BasePanel <|-- DashboardPanel
-    BasePanel <|-- PatientPanel
-    BasePanel <|-- StaffPanel
-    BasePanel <|-- AppointmentPanel
-    BasePanel <|-- RecordsPanel
-    BasePanel ..> ServiceCall
-    MainFrame o-- "5" BasePanel : pages
-    JDialog <|-- FormDialog
-    FormDialog <|-- PatientDialog
-    FormDialog <|-- StaffDialog
-    FormDialog <|-- AppointmentDialog
-    AbstractTableModel <|-- EntityTableModel
-    EntityTableModel <|-- PatientTableModel
-    EntityTableModel <|-- StaffTableModel
-    EntityTableModel <|-- AppointmentTableModel
-    EntityTableModel <|-- RecordTableModel
-    JButton <|-- RoundedButton
-    JButton <|-- NavButton
-    JPanel <|-- RoundedPanel
-    RoundedPanel <|-- StatCard
-    JTextField <|-- HintTextField
-    DefaultTableCellRenderer <|-- StyledCellRenderer
-    PatientPanel ..> PatientDialog : opens
-    StaffPanel ..> StaffDialog : opens
-    AppointmentPanel ..> AppointmentDialog : opens
-    DashboardPanel ..> AppointmentDialog : opens
+  class Identifiable {
+    <<interface>>
+    id
+  }
+  class Searchable {
+    <<interface>>
+    matches()
+  }
+  class Billable {
+    <<interface>>
+    computeFee()
+  }
+  class Appointment {
+    -id string
+    -patient Patient
+    -staff MedicalStaff
+    -date CalendarDate
+    -time TimeOfDay
+    -type AppointmentType
+    -reason string
+    -status AppointmentStatus
+    -remarks string
+    +restore(props, saved)$ Appointment
+    +estimateFee(staff, type)$ number
+    +computeFee() number
+    +reschedule(date, time)
+    +complete(findings)
+    +cancel(reason)
+    +markNoShow()
+    -ensureScheduled(action)
+    +isActive() boolean
+    +getEndTime() TimeOfDay
+    +overlapsWith(date, start, end) boolean
+    +getSummary() string
+    +matches(keyword) boolean
+  }
+  class Enumeration {
+    <<abstract>>
+    -code string
+    -label string
+    +values()$ Enumeration[]
+    +from(code)$ Enumeration
+    +seal(enumClass)$
+  }
+  class AppointmentStatus {
+    +SCHEDULED$
+    +COMPLETED$
+    +CANCELLED$
+    +NO_SHOW$
+    +isClosed boolean
+    +isBillable boolean
+  }
+  class AppointmentType {
+    +CONSULTATION$
+    +FOLLOW_UP$
+    +CHECK_UP$
+    +EMERGENCY$
+    -feeMultiplier number
+  }
+  class DayOfWeek {
+    -number number
+    +shortLabel string
+    +ofNumber(n)$ DayOfWeek
+    +range(from, to)$ Set
+    +describe(days)$ string
+  }
+  Identifiable <|.. Person
+  Searchable <|.. Person
+  Identifiable <|.. Appointment
+  Billable <|.. Appointment
+  Searchable <|.. Appointment
+  Enumeration <|-- AppointmentStatus
+  Enumeration <|-- AppointmentType
+  Enumeration <|-- DayOfWeek
+  Appointment --> "1" Patient
+  Appointment --> "1" MedicalStaff
+  Appointment --> AppointmentStatus
+  Appointment --> AppointmentType
 ```
 
-> **Diagrams as images** (for Canva or Google Docs): ready-made PNGs are in [`diagrams/`](diagrams/) (overview plus detailed views). You can also open [`class-diagram.html`](class-diagram.html) in a browser, or paste a diagram's code into <https://mermaid.live>. GitHub renders the diagrams directly in this file.
+### 4.3 Value objects, clock and errors
 
-### 3.3 Relationships Explained
+```mermaid
+classDiagram
+  class CalendarDate {
+    -year number
+    -month number
+    -day number
+    +parse(text)$ CalendarDate
+    +dayOfWeek DayOfWeek
+    +plusDays(n) CalendarDate
+    +isBefore(other) boolean
+    +yearsUntil(other) number
+    +formatLong() string
+  }
+  class TimeOfDay {
+    -minutes number
+    +parse(text)$ TimeOfDay
+    +plusMinutes(n) TimeOfDay
+    +isBefore(other) boolean
+    +format12h() string
+  }
+  class Clock {
+    <<abstract>>
+    +now()* ClinicMoment
+    +today() CalendarDate
+    +isPast(date, time) boolean
+    +current()$ Clock
+    +use(clock)$
+  }
+  class ZoneClock {
+    -timeZone string
+    +now() ClinicMoment
+  }
+  class FixedClock {
+    -date CalendarDate
+    -time TimeOfDay
+    +now() ClinicMoment
+    +set(date, time)
+  }
+  class ClinicError {
+    +status number
+    +code string
+  }
+  class ValidationError
+  class ConflictError
+  class InvalidStateError
+  class NotFoundError
+  class CsvWriter {
+    -columns
+    +write(rows) string
+    +quote(value)$ string
+  }
+  Clock <|-- ZoneClock
+  Clock <|-- FixedClock
+  Error <|-- ClinicError
+  ClinicError <|-- ValidationError
+  ValidationError <|-- ConflictError
+  ClinicError <|-- InvalidStateError
+  ClinicError <|-- NotFoundError
+```
 
-| Relationship | Classes | Meaning |
-|---|---|---|
-| **Inheritance** (`<\|--`) | `Person → Patient, MedicalStaff`; `MedicalStaff → Doctor, Dentist, Nurse` | A Patient *is a* Person; a Doctor *is a* MedicalStaff |
-| **Realization** (`<\|..`) | `Person, Appointment` implement `Identifiable`, `Searchable`; `Appointment` implements `Billable`; `InMemoryRepository` implements `Repository` | The class fulfills the interface's contract |
-| **Association** (`-->`) | `Appointment → Patient`, `Appointment → MedicalStaff` (many-to-one) | Each appointment belongs to exactly one patient and one staff member. A patient or staff member can have many appointments |
-| **Composition** (`*--`) | `ClinicDatabase *-- Repository` | The database owns its three repositories. They are created with it and do not exist without it |
-| **Aggregation** (`o--`) | `MainFrame o-- BasePanel` | The main window holds the five pages |
-| **Dependency** (`..>`) | `ClinicService ..> ValidationException`, `StaffFactory ..> MedicalStaff` | One class uses or creates another without storing it |
+### 4.4 Repositories and services
+
+```mermaid
+classDiagram
+  class Repository~T~ {
+    <<abstract>>
+    +nextId()* string
+    +add(item)*
+    +update(item)*
+    +remove(id)* boolean
+    +findById(id)* T
+    +findAll()* T[]
+    +findWhere(condition) T[]
+    +count() number
+  }
+  class InMemoryRepository~T~ {
+    -items Map
+    -prefix string
+    -counter number
+    +nextId() string
+    +add(item)
+    +snapshot()
+    +restore(counter, items)
+  }
+  class JsonFileRepository~T~ {
+    -file string
+    -mapper RecordMapper
+    +add(item)
+    +update(item)
+    +remove(id) boolean
+  }
+  class SqliteRepository~T~ {
+    -db DatabaseSync
+    -table string
+    +add(item)
+    +update(item)
+    +remove(id) boolean
+  }
+  class RecordMapper~T,R~ {
+    <<abstract>>
+    +toRecord(entity)* R
+    +fromRecord(record)* T
+  }
+  class PatientMapper
+  class StaffMapper
+  class AppointmentMapper
+  class ClinicDatabase {
+    +patients Repository
+    +staff Repository
+    +appointments Repository
+    +inMemory()$ ClinicDatabase
+    +jsonFiles(dir)$ ClinicDatabase
+    +sqlite(db)$ ClinicDatabase
+    +isEmpty() boolean
+  }
+  class ClinicService {
+    -db ClinicDatabase
+    -clock Clock
+    +registerPatient(input) Patient
+    +updatePatient(patient, input)
+    +removePatient(patient)
+    +createStaff(role, input) MedicalStaff
+    +updateStaff(staff, input)
+    +updateStaffSchedule(staff, days, start, end)
+    +setStaffActive(staff, active)
+    +removeStaff(staff)
+    +bookAppointment(request) Appointment
+    +rescheduleAppointment(a, date, time)
+    +completeAppointment(a, findings)
+    +cancelAppointment(a, reason)
+    +markNoShow(a)
+    +getAvailableSlots(staff, date, exclude) TimeOfDay[]
+    +findAppointments(criteria) Appointment[]
+    +getRecords(filters) Appointment[]
+    +computeTotal(items) number
+    -validateSchedule()
+    -hasConflict()
+  }
+  class StatsService {
+    +dashboard(scope)
+    +analytics(options)
+  }
+  class AuditLog {
+    +observe(subject) AuditLog
+    +record(event, actor) AuditEntry
+    +list(filters) AuditEntry[]
+  }
+  class QueueService {
+    +checkIn(appointment)
+    +call(appointment)
+    +remove(appointment)
+    +board()
+    +tick()
+  }
+  class SampleDataLoader {
+    +populate(db, clock)$
+  }
+  Repository <|-- InMemoryRepository
+  InMemoryRepository <|-- JsonFileRepository
+  InMemoryRepository <|-- SqliteRepository
+  RecordMapper <|-- PatientMapper
+  RecordMapper <|-- StaffMapper
+  RecordMapper <|-- AppointmentMapper
+  EventEmitter <|-- ClinicService
+  EventEmitter <|-- QueueService
+  ClinicDatabase *-- Repository
+  ClinicService --> ClinicDatabase
+  AuditLog ..> ClinicService : observes
+  QueueService ..> ClinicService : observes
+```
+
+### 4.5 Sign-in, roles and the REST API
+
+```mermaid
+classDiagram
+  class User {
+    -passwordHash string
+    +username string
+    +role UserRole
+    +staffId string
+    +verifyPassword(password, hasher) Promise
+    +toPublic() object
+  }
+  class UserRole
+  class AuthService {
+    +seedAccounts(options)
+    +login(username, password, address)
+    +logout(token)
+    +userForToken(token) User
+  }
+  class PasswordHasher {
+    +hash(password) Promise
+    +verify(password, stored) Promise
+  }
+  class SessionStore {
+    +create(userId) string
+    +touch(token)
+    +destroy(token)
+  }
+  class RateLimiter {
+    +retryAfter(key) number
+    +hit(key)
+    +reset(key)
+  }
+  class AccessPolicy {
+    <<abstract>>
+    +for(user)$ AccessPolicy
+    +can(permission)* boolean
+    +staffScope string
+    +canAccess(appointment) boolean
+    +permissions() string[]
+  }
+  class AdminPolicy {
+    +can() boolean
+  }
+  class ReceptionistPolicy {
+    +can(permission) boolean
+  }
+  class DoctorPolicy {
+    -staffId string
+    +can(permission) boolean
+    +staffScope string
+  }
+  class Controller {
+    <<abstract>>
+    +basePath* string
+    +routes(router)*
+    +router() Router
+    +appointmentFor(req, id) Appointment
+    +patientFor(req, id) Patient
+    +view(req)
+  }
+  class PatientController
+  class StaffController
+  class AppointmentController
+  class RecordController
+  class StatsController
+  class AuthController
+  class AuditController
+  class QueueController
+  class MetaController
+  Enumeration <|-- UserRole
+  AccessPolicy <|-- AdminPolicy
+  AccessPolicy <|-- ReceptionistPolicy
+  AccessPolicy <|-- DoctorPolicy
+  Controller <|-- PatientController
+  Controller <|-- StaffController
+  Controller <|-- AppointmentController
+  Controller <|-- RecordController
+  Controller <|-- StatsController
+  Controller <|-- AuthController
+  Controller <|-- AuditController
+  Controller <|-- QueueController
+  Controller <|-- MetaController
+  AuthService --> PasswordHasher
+  AuthService --> SessionStore
+  AuthService --> RateLimiter
+  AuthService ..> AccessPolicy : creates
+```
+
+### 4.6 Browser user interface
+
+```mermaid
+classDiagram
+  class App {
+    +api ApiClient
+    +router Router
+    +actions AppointmentActions
+    +can(permission) boolean
+    +installRoutes() App
+    +start()
+  }
+  class BasePage {
+    <<abstract>>
+    +title* string
+    +render()* Node
+    +refresh()* Promise
+    +mount(container)
+    +safeRefresh()
+    +unmount()
+  }
+  class ListPage {
+    <<abstract>>
+    +table DataTable
+    +filters()
+    +rowActions()
+    +exportCsv()
+  }
+  class DashboardPage
+  class PatientsPage
+  class StaffPage
+  class AppointmentsPage
+  class RecordsPage
+  class AuditPage
+  class CalendarPage
+  class PatientProfilePage
+  class QueuePage
+  class LoginPage
+  class DataTable {
+    <<WebComponent>>
+    +columns
+    +rows
+    +selected
+    +select(id)
+    +toCsv() string
+  }
+  class StatCard {
+    <<WebComponent>>
+  }
+  class BaseDialog {
+    <<abstract>>
+    +title* string
+    +buildBody()*
+    +buildFooter()
+    +open() Promise
+    +close(value)
+    +print()
+  }
+  class FormDialog {
+    <<abstract>>
+    +buildFields()*
+    +onSave()* Promise
+    +field(options)
+    +showError(err)
+  }
+  class ConfirmDialog
+  class TextPromptDialog
+  class PatientDialog
+  class StaffDialog
+  class AppointmentDialog
+  class AppointmentDetailsDialog
+  class Chart {
+    <<abstract>>
+    +draw()* Element
+    +summary()* string
+    +table()*
+    +element() Element
+  }
+  class DailyVolumeChart
+  class StatusDonutChart
+  class BarListChart
+  class ApiClient {
+    +request(method, path, body)
+    +patients(q) Patient[]
+    +appointments(filters) Appointment[]
+  }
+  class ApiError
+  BasePage <|-- ListPage
+  BasePage <|-- DashboardPage
+  BasePage <|-- CalendarPage
+  BasePage <|-- PatientProfilePage
+  BasePage <|-- QueuePage
+  BasePage <|-- LoginPage
+  ListPage <|-- PatientsPage
+  ListPage <|-- StaffPage
+  ListPage <|-- AppointmentsPage
+  ListPage <|-- RecordsPage
+  ListPage <|-- AuditPage
+  HTMLElement <|-- DataTable
+  HTMLElement <|-- StatCard
+  BaseDialog <|-- ConfirmDialog
+  BaseDialog <|-- FormDialog
+  BaseDialog <|-- AppointmentDetailsDialog
+  FormDialog <|-- TextPromptDialog
+  FormDialog <|-- PatientDialog
+  FormDialog <|-- StaffDialog
+  FormDialog <|-- AppointmentDialog
+  Chart <|-- DailyVolumeChart
+  Chart <|-- StatusDonutChart
+  Chart <|-- BarListChart
+  EventTarget <|-- ApiClient
+  Error <|-- ApiError
+  App --> BasePage : shows one at a time
+  ListPage *-- DataTable
+```
+
+### 4.7 Relationships
+
+| Relationship | Example |
+|---|---|
+| **Inheritance** (`extends`) | `Doctor extends MedicalStaff extends Person`; `JsonFileRepository extends InMemoryRepository extends Repository`; `PatientsPage extends ListPage extends BasePage` |
+| **Realization** (contract) | `Appointment` implements `Identifiable`, `Billable`, `Searchable` (declared in `static implements`) |
+| **Association** | `Appointment` → one `Patient` and one `MedicalStaff` |
+| **Composition** | `ClinicDatabase` owns three repositories; `ListPage` owns its `DataTable` |
+| **Dependency** | `StaffFactory` creates `MedicalStaff` subclasses; `AuditLog` and `QueueService` observe `ClinicService` |
 
 ---
 
-## 4. Application of the Four Pillars of OOP
+## 5. Application of the Four Pillars of OOP
 
-### 4.1 Encapsulation
+JavaScript has classes, `extends` and `super`, but it has no `abstract`, `interface`, `private` keyword
+or method overloading. The table shows how each Java idea was expressed in JavaScript. All paths are
+inside `web/`.
 
-The internal state of every class is **private** and can only be reached through methods that protect it.
+| Pillar | Java version | JavaScript version | Where to look |
+|---|---|---|---|
+| **Encapsulation** | `private` fields with validating setters; no `setStatus()` | `#private` fields; `get`/`set` accessors that validate; read-only `id`; no status setter, so the status changes only through `complete()`, `cancel()`, `markNoShow()`, `reschedule()`; frozen value objects | `src/domain/Person.js:30` (`#id`, getter only at `:54`), `src/domain/Person.js:78` (validating `set contactNumber`), `src/domain/Appointment.js:244` (`get status()` with no setter), `src/domain/Appointment.js:145` (`#ensureScheduled`), `src/domain/time/TimeOfDay.js:13` and `:21` (`#minutes`, `Object.freeze(this)`), `src/domain/MedicalStaff.js:119` (returns a frozen copy of the working days), `src/auth/User.js` (password hash never exposed) |
+| **Inheritance** | `extends`, `super(...)` | `class Patient extends Person`, `class Doctor extends MedicalStaff`, each calling `super(props)`; error classes `ClinicError extends Error`; UI classes `PatientsPage extends ListPage extends BasePage`, `PatientDialog extends FormDialog extends BaseDialog`, `DataTable extends HTMLElement` | `src/domain/Patient.js:21`, `src/domain/MedicalStaff.js:29`, `src/domain/Doctor.js:10`, `src/domain/Dentist.js:9`, `src/domain/Nurse.js:10`, `src/domain/errors.js:10` and `:34`, `src/repositories/JsonFileRepository.js:20`, `public/app/pages/ListPage.js:13`, `public/app/components/dialogs/FormDialog.js:26`, `public/app/components/DataTable.js:38` |
+| **Polymorphism** | overriding; five overloaded `findAppointments(...)` | Overriding: `getConsultationFee()`, `getSlotDurationMinutes()`, `getDisplayName()`, `getDetails()`, `matches()`, `render()`/`refresh()`, `can()`. **JavaScript has no overloading**, so `findAppointments(criteria)` checks the argument's type at runtime (`CalendarDate`, `Patient`, `MedicalStaff`, `AppointmentStatus`, keyword string or criteria object) and runs the matching search. This is honest runtime dispatch, not true compile-time overloading. | `src/domain/Doctor.js:33`, `src/domain/Dentist.js:25`, `src/domain/Nurse.js:26` (three fees), `src/domain/Appointment.js:94` (`estimateFee` calls whichever override applies), `src/services/ClinicService.js:381` (`findAppointments`), `src/services/ClinicService.js:446` (`computeTotal` works on any `Billable`), `src/auth/AccessPolicy.js:49` (one `can()` call, three answers), `public/app/App.js:217` (the app calls `mount()` on whatever page is current) |
+| **Abstraction** | `abstract` classes and `interface`s | Abstract classes refuse `new` with `if (new.target === Person) throw …`; abstract methods throw "must implement" until a subclass overrides them; "interfaces" are frozen contracts (`Identifiable`, `Searchable`, `Billable`) checked by `implementsInterface(obj, contract)`; `Repository` hides whether data is in memory, JSON files or SQLite | `src/domain/Person.js:42`, `src/domain/MedicalStaff.js:42` and `:60` (abstract `getConsultationFee`), `src/domain/contracts.js:45` (`implementsInterface`), `src/repositories/Repository.js:13`, `src/domain/time/Clock.js` (abstract `Clock`), `public/app/pages/BasePage.js:20`, `public/app/components/charts.js:12` |
 
-| Where | How |
-|---|---|
-| `Person`, `Patient`, `MedicalStaff` | All fields are `private`. Setters validate before storing: names cannot be blank, contact numbers must be valid PH mobile numbers, birth dates cannot be in the future, and a shift must end after it starts. |
-| `Person.id` | Declared `final` with no setter, so an ID can never change. |
-| `MedicalStaff.getWorkingDays()` | Returns an **unmodifiable** view, so outside code cannot change a schedule behind the object's back. |
-| `Appointment` | Has **no `setStatus()`**. The status changes only through `complete()`, `cancel()`, `markNoShow()` and `reschedule()`. Each one first checks that the appointment is still `SCHEDULED`. This makes invalid transitions (such as cancelling a completed visit) impossible. |
-| `InMemoryRepository` | The map and ID counter are private. `findAll()` returns a copy of the list. |
+**Design patterns used:** Factory (`StaffFactory`, `AccessPolicy.for`), Repository, Observer
+(`ClinicService` emits "change"; `AuditLog` and `QueueService` subscribe), Strategy (table column
+definitions passed to `<cc-data-table>`), Template Method (`FormDialog` handles submitting and errors;
+subclasses supply `buildFields()` and `onSave()`), and Value Object (`CalendarDate`, `TimeOfDay`, `AuditEntry`).
 
-### 4.2 Inheritance
-
-| Parent | Children | What is inherited |
-|---|---|---|
-| `Person` (abstract) | `Patient`, `MedicalStaff` | ID, name, contact, email, validation, `getFullName()`, `matches()` |
-| `MedicalStaff` (abstract) | `Doctor`, `Dentist`, `Nurse` | License, working days, shift, `isAvailableOn()`, `getTimeSlots()`, `getDetails()` |
-| `Exception` | `ValidationException` | Custom checked exception for business-rule errors |
-| `BasePanel` (abstract) | 5 pages | Page header, dialogs, toolbar and table helpers |
-| `FormDialog` (abstract) | 3 dialogs | Form layout, Save/Cancel buttons, error handling |
-| `EntityTableModel<T>` (abstract) | 4 table models | Row storage and all JTable plumbing |
-| Swing classes | `RoundedButton`, `NavButton`, `RoundedPanel`, `StatCard`, `HintTextField` | Custom painting by overriding `paintComponent()` |
-
-Subclasses call the parent's constructor with `super(...)` and reuse its code. Example: `Doctor` passes the common staff data to `MedicalStaff`, which passes the personal data to `Person`.
-
-### 4.3 Polymorphism
-
-**Runtime polymorphism (method overriding):**
-
-- `getConsultationFee()` returns a different value for each type: Doctor ₱500 (₱800 for specialists), Dentist ₱700, Nurse ₱250.
-- `getSlotDurationMinutes()`: Doctor 30, Dentist 60, Nurse 15 minutes. `MedicalStaff.getTimeSlots()` is written **once**, yet it produces different slots for each type because it calls this overridden method.
-- `getDisplayName()`: "Dr. Maria Santos", "Dr. Carlo Mendoza, DMD", "Liza Bautista, RN".
-- `getRole()`, `getDetails()`, `getServiceArea()` and `matches()` are overridden in each subclass.
-- `Appointment.computeFee()` calls `staff.getConsultationFee()` without knowing whether the staff member is a Doctor, Dentist or Nurse.
-- `ClinicService.addStaff(MedicalStaff)` accepts any subclass. `StaffFactory.create()` returns the right subclass as a `MedicalStaff` reference.
-- `MainFrame` stores all pages in a `List<BasePanel>` and calls `page.refreshData()`, and each page runs its own version.
-- `FormDialog.handleSave()` calls the abstract `onSave()`, which runs the `PatientDialog`, `StaffDialog` or `AppointmentDialog` version.
-
-**Compile-time polymorphism (method overloading):**
-
-- `ClinicService.findAppointments(...)` has five versions: by `LocalDate`, `Patient`, `MedicalStaff`, `AppointmentStatus` or `String` keyword.
-- `ClinicService.getAvailableSlots(staff, date)` and `getAvailableSlots(staff, date, exclude)`.
-- `AppointmentDialog` has two constructors.
-
-### 4.4 Abstraction
-
-| Abstract type | Purpose |
-|---|---|
-| `Person`, `MedicalStaff` (abstract classes) | Define *what* every person or staff member must provide (`getRole()`, `getConsultationFee()`, and so on) without saying *how*. They cannot be instantiated. |
-| `Billable` interface | `ClinicService.computeTotal(List<? extends Billable>)` totals fees for any billable object without knowing what it is. |
-| `Searchable`, `Identifiable` interfaces | Uniform searching and ID lookup across different classes. |
-| `Repository<T>` interface | The service depends only on this contract. The storage could change from an in-memory map to a database without touching any business logic. |
-| `ClinicService` | Hides all the complex rules (slot generation, overlap checks, persistence) behind simple methods such as `bookAppointment(...)`. |
-| `BasePanel`, `FormDialog`, `EntityTableModel` | Template classes for the UI. Subclasses supply only the parts that differ. |
+**Same classes in two places.** The browser imports `web/src/domain/*.js` directly. When the booking
+dialog shows a fee estimate it calls `Appointment.estimateFee(staff, type)` on a real `Dentist` or
+`Nurse` object, and when a patient form is saved the browser builds a real `Patient` first, so the
+same validation messages appear before anything is sent. The server checks everything again.
 
 ---
 
-## 5. System Features
+## 6. System Features
 
-| Module | Features |
+| Area | Features |
 |---|---|
-| **Dashboard** | Patient and staff counts, today's appointment count, upcoming and completed visits, fees collected, today's schedule, staff on duty today |
-| **Patients** | Register, edit, delete (blocked if the patient has records), live search, book an appointment for the selected patient, jump to the patient's records |
-| **Medical Staff** | Add Doctor, Dentist or Nurse; edit; activate or deactivate; remove (blocked if the staff member has records); filter by role; live search; details line |
-| **Appointments** | Book (only open slots shown, live fee estimate), reschedule, complete with findings, cancel with reason, mark no-show; filter by status and date range; double-click for details |
-| **Appointment Records** | History of closed appointments, filter by patient, search findings, summary totals, view details, export to CSV |
-| **Data** | Saved automatically to `data/clinic-data.ser` after every change. Sample data is created on the first run |
+| Dashboard | Patients, active staff, today's and upcoming appointments, completed visits, fees collected; today's schedule; staff on duty; an on-duty timeline with a "now" line; charts for appointments per day (14 days), status breakdown, fees by staff type and busiest staff, each with a text summary and a "Show as table" option |
+| Patients | Register, edit, search (ID, name, phone, email, address), delete patients without history; patient profile with visit timeline, findings, total billed and upcoming visits |
+| Medical staff | Add and edit Doctors, Dentists and Nurses; role filter; details line; activate or deactivate; delete staff without history |
+| Appointments | Book open slots only, with a fee estimate; reschedule; complete with findings; cancel with a reason (undo within 10 seconds); no-show; filters by status and period; details window with a printable appointment slip |
+| Calendar | Week view per staff member and day view for the whole clinic; click an open slot to book; drag an appointment to reschedule (the details window offers the same action for keyboard users) |
+| Records | Closed appointments, per-patient filter, totals, CSV export with the same columns as the Java version |
+| Queue | Check patients in and call them; a public board at `/board` updates live with Server-Sent Events and shows only per-day ticket numbers and initials |
+| Accounts | Admin (everything), Receptionist (front desk: no staff changes, no clinical findings, no audit log), Doctor (own schedule and patients only) |
+| Audit log | Who changed what and when, plus sign-ins and CSV exports (admins only) |
+| Quality of life | Ctrl+K search and commands, Alt+N to book, toasts read out by screen readers, light and dark themes, empty states, loading skeletons, layouts down to phone width |
 
-### Business rules enforced
+### Business rules enforced (each one has an automated test)
 
-- Appointments cannot be booked in the past.
-- A staff member can only be booked on their working days and within their shift.
-- No two active appointments may overlap for the same staff member **or** the same patient.
-- Only *Scheduled* appointments can be rescheduled, completed, cancelled or marked no-show.
-- Completing requires findings, and cancelling requires a reason.
-- A staff member with scheduled appointments cannot be deactivated, and their schedule cannot be changed in a way that strands those appointments.
-- Patients and staff with appointment records cannot be deleted, so medical records are preserved.
+- No bookings in the past (in clinic time); only on the staff member's working days, within the shift, on a valid slot.
+- No overlapping scheduled appointments for the same staff member **or** the same patient.
+- Only scheduled appointments can be rescheduled, completed (findings required), cancelled (reason required) or marked no-show.
+- Staff with scheduled appointments cannot be deactivated, and their schedule cannot change in a way that leaves an appointment outside it.
+- Patients and staff with any appointment record cannot be deleted.
+- The booking form shows only open slots, and keeps the appointment's own slot when rescheduling.
+- A failed edit changes nothing: a complete candidate object is validated before any value is copied.
 
 ### Fee computation
 
-`Fee = staff base fee × appointment-type multiplier`
-
-| Staff | Base fee | Slot length |
+| Staff | Base fee | Slot |
 |---|---|---|
-| Doctor (General Medicine) | ₱500.00 | 30 min |
-| Doctor (Specialist) | ₱800.00 | 30 min |
-| Dentist | ₱700.00 | 60 min |
-| Nurse | ₱250.00 | 15 min |
+| Doctor, General Medicine | ₱500 | 30 min |
+| Doctor, specialist | ₱800 | 30 min |
+| Dentist | ₱700 | 60 min |
+| Nurse | ₱250 | 15 min |
 
 | Appointment type | Multiplier |
 |---|---|
@@ -697,27 +745,51 @@ Subclasses call the parent's constructor with `super(...)` and reuse its code. E
 | General Check-up | × 0.80 |
 | Emergency | × 1.50 |
 
-Cancelled and no-show appointments are charged ₱0.00.
+**Fee = base fee × multiplier.** Cancelled and no-show appointments are not charged.
 
 ---
 
-## 6. Suggested Presentation Flow (7–10 minutes)
+## 7. Security and Patient Privacy
 
-| Time | Part | Suggested speaker |
+- Passwords are hashed with **scrypt** (Node's built-in `crypto`), never stored or sent in plain text.
+- Sessions use a random 256-bit token in an **httpOnly, SameSite=Strict** cookie (Secure in production); sessions end after 60 idle minutes.
+- Sign-in is rate-limited per address and per address + username.
+- Every API route checks the role's permissions. Doctors see only their own appointments and patients, and other records answer "not found".
+- Clinical findings are hidden from the Receptionist role in the API, the summary text and the CSV.
+- All page content is built with text nodes (no `innerHTML`). A strict Content-Security-Policy allows only the app's own scripts and styles.
+- Write requests must be same-origin JSON. Request bodies are checked against schemas and limited to 20 KB.
+- CSV cells that start with `=`, `+`, `-` or `@` are prefixed so spreadsheets do not run them as formulas.
+- The public queue board shows only a per-day ticket number and the patient's initials.
+- **Demo mode** (the default) lists the demo accounts on the sign-in page and shows a "sample data only"
+  banner. Only made-up sample data should be used in demo mode.
+
+---
+
+## 8. Testing
+
+| Suite | Command | What it covers |
 |---|---|---|
-| 0:00–0:45 | Title, group members, project overview | Member 1 |
-| 0:45–1:30 | Objectives | Member 1 |
-| 1:30–3:00 | Class diagram walkthrough | Member 2 |
-| 3:00–5:00 | Four pillars with code examples (section 4) | Member 2 & 3 |
-| 5:00–8:00 | **System demo (3 minutes)** | Member 3 |
-| 8:00–9:00 | Conclusion and each member's contribution | All |
+| Unit tests (`node:test`) | `npm test` | Every domain rule and service rule, repositories (memory, JSON, SQLite), audit log, queue, sign-in and roles |
+| API tests | `npm test` | Every endpoint over real HTTP: status codes, error format, permissions, CSV, Server-Sent Events, security headers |
+| Coverage | `npm run test:coverage` | Fails below 90% lines / 85% branches on `src/domain`, `src/services`, `src/repositories` |
+| End-to-end (Playwright) | `npm run test:e2e` | Register a patient → book → double booking blocked → complete → records → CSV; doctor scoping; undo; Ctrl+K; queue board; phone layout |
+| Lint and types | `npm run lint`, `npm run typecheck` | ESLint, and TypeScript checking of the JSDoc types (`// @ts-check`) |
+| Class diagrams | `npm run check:diagrams` | Every class, member and inheritance arrow in this document exists in the code |
 
-### 3-minute demo script
+`npm run verify` runs lint, typecheck, coverage and the diagram check together.
 
-1. **Dashboard (20 s).** Point out the statistics, today's schedule and staff on duty.
-2. **Patients (30 s).** Register a new patient. Show the validation by entering a wrong phone number first, then fix it.
-3. **Medical Staff (30 s).** Add a Nurse and show that the fee and slot length differ from a Doctor's (polymorphism). Select a row to show the `getDetails()` line.
-4. **Book an appointment (40 s).** Choose the new patient and a doctor. Change the date to the doctor's day off to show the warning. Pick a valid date, show the open slots and the fee estimate, then book.
-5. **Double-booking check (15 s).** Try to book another patient in the same slot and show that the slot is no longer offered.
-6. **Complete / Cancel (25 s).** Complete an appointment with findings. Then try to cancel it and show the error (encapsulation of status).
-7. **Records (20 s).** Open the patient's records from the Patients page, view the details and export to CSV.
+---
+
+## 9. Suggested Presentation Flow (7–10 minutes)
+
+1. **Problem and objectives** (1 min): sections 1 and 2.
+2. **Architecture** (1 min): section 3. One set of domain classes, used by both the server and the browser.
+3. **Class diagrams and the four pillars** (3 min): sections 4 and 5. Open `web/src/domain/MedicalStaff.js` and `Doctor.js` side by side.
+4. **Live demo** (3 min), signed in as `admin`:
+   - Register a patient, and show the inline validation of a wrong phone number.
+   - Book a dentist appointment. Point out that only open slots appear and the fee comes from the Dentist class.
+   - Try the same slot for another patient: it is not offered.
+   - Complete the visit with findings, then open the Records page and export the CSV.
+   - Open `/board` in another window, check a patient in and call them.
+   - Sign in as `drsantos` to show that a doctor sees only their own schedule.
+5. **Testing** (1 min): run `npm test` and show the number of passing tests.

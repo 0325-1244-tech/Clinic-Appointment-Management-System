@@ -50,6 +50,11 @@ export function scanCode() {
       }
       classes.set(name, { name, parent, members, file: path.relative(webRoot, file) });
     }
+    // "Interfaces" are frozen contract objects: defineContract('Billable', { methods: ['computeFee'] }).
+    for (const m of source.matchAll(/export const (\w+) = defineContract\('\w+', \{([^}]*)\}\)/g)) {
+      const members = new Set([...m[2].matchAll(/'(\w+)'/g)].map((x) => x[1]));
+      classes.set(m[1], { name: m[1], parent: null, members, file: path.relative(webRoot, file) });
+    }
   }
   return classes;
 }
@@ -73,6 +78,8 @@ export function parseDiagrams(markdown) {
   const classes = new Map();
   /** @type {[string, string][]} parent, child */
   const inherits = [];
+  /** @type {[string, string][]} contract, class */
+  const realizes = [];
   for (const block of blocks) {
     for (const m of block.matchAll(/class (\w+)(?:~[^~]+~)?\s*\{([\s\S]*?)\}/g)) {
       const members = classes.get(m[1]) ?? new Set();
@@ -84,13 +91,16 @@ export function parseDiagrams(markdown) {
       }
       classes.set(m[1], members);
     }
+    for (const m of block.matchAll(/^\s*(\w+)\s*<\|\.\.\s*(\w+)/gm)) {
+      realizes.push([m[1], m[2]]);
+    }
     for (const m of block.matchAll(/^\s*(\w+)\s*<\|--\s*(\w+)/gm)) {
       inherits.push([m[1], m[2]]);
       if (!classes.has(m[1])) classes.set(m[1], new Set());
       if (!classes.has(m[2])) classes.set(m[2], new Set());
     }
   }
-  return { blockCount: blocks.length, classes, inherits };
+  return { blockCount: blocks.length, classes, inherits, realizes };
 }
 
 /** Members of a class including everything it inherits. @param {Map<string, CodeClass>} code @param {string} name */
@@ -111,7 +121,7 @@ const BUILT_INS = new Set(['Error', 'EventEmitter', 'EventTarget', 'HTMLElement'
 
 function main() {
   const code = scanCode();
-  const { blockCount, classes, inherits } = parseDiagrams(fs.readFileSync(docFile, 'utf8'));
+  const { blockCount, classes, inherits, realizes } = parseDiagrams(fs.readFileSync(docFile, 'utf8'));
   const problems = [];
   if (blockCount === 0) problems.push('No Mermaid classDiagram blocks found in docs/DOCUMENTATION.md.');
   for (const [name, members] of classes) {
@@ -131,12 +141,19 @@ function main() {
       problems.push(`Diagram says ${child} extends ${parent}, but the code says ${cls.parent ?? 'nothing'}.`);
     }
   }
+  for (const [contract, cls] of realizes) {
+    const source = code.get(cls) ? fs.readFileSync(path.join(webRoot, /** @type {CodeClass} */ (code.get(cls)).file), 'utf8') : '';
+    if (!code.has(contract)) problems.push(`Contract ${contract} is in the diagram but not in the code.`);
+    else if (!new RegExp(`static implements = [^;]*\\b${contract}\\b`).test(source)) {
+      problems.push(`Diagram says ${cls} implements ${contract}, but ${cls} does not list it in static implements.`);
+    }
+  }
   if (problems.length > 0) {
     console.error(`Class diagrams do not match the code (${problems.length} problem(s)):`);
     problems.forEach((p) => console.error(`  - ${p}`));
     process.exit(1);
   }
-  console.info(`Class diagrams match the code: ${classes.size} classes and ${inherits.length} inheritance arrows in ${blockCount} diagram(s) checked.`);
+  console.info(`Class diagrams match the code: ${classes.size} classes, ${inherits.length} inheritance and ${realizes.length} interface arrows in ${blockCount} diagram(s) checked.`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
