@@ -24,6 +24,11 @@ export class Views {
     return { ...patients.toRecord(p), fullName: p.fullName, age: p.age, details: p.getDetails() };
   }
 
+  /** Completed visits store the clinical findings in the remarks. @param {Appointment} a */
+  static hasFindings(a) {
+    return a.status.code === 'COMPLETED';
+  }
+
   /** @param {MedicalStaff} s */
   static staff(s) {
     return {
@@ -38,10 +43,16 @@ export class Views {
     };
   }
 
-  /** @param {Appointment} a */
-  static appointment(a) {
+  /**
+   * @param {Appointment} a
+   * @param {{ findings?: boolean }} [options] findings: false hides the clinical notes of completed visits
+   */
+  static appointment(a, { findings = true } = {}) {
+    const hidden = !findings && Views.hasFindings(a);
     return {
       ...appointments.toRecord(a),
+      remarks: hidden ? '' : a.remarks,
+      findingsHidden: hidden,
       endTime: a.getEndTime().toString(),
       fee: a.computeFee(),
       statusLabel: a.status.label,

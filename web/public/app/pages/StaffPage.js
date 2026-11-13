@@ -101,7 +101,10 @@ export class StaffPage extends ListPage {
     if (this.table.rows.length === 0) {
       this.table.loading = true;
     }
-    this.table.rows = await this.app.api.staff({ q: this.search.value, role: this.#role.value || undefined });
+    const ticket = this.beginLoad();
+    const rows = await this.app.api.staff({ q: this.search.value, role: this.#role.value || undefined });
+    if (this.isStale(ticket)) return;
+    this.table.rows = rows;
     this.onSelectionChange();
   }
 

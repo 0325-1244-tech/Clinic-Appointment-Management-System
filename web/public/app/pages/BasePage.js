@@ -13,6 +13,7 @@ export class BasePage {
   #app;
   /** @type {AbortController} */
   #lifetime = new AbortController();
+  #loadSeq = 0;
 
   /** @param {import('../App.js').App} app */
   constructor(app) {
@@ -92,11 +93,29 @@ export class BasePage {
     await this.safeRefresh();
   }
 
+  /**
+   * Call before an await in refresh(); `isStale(ticket)` afterwards tells whether a newer
+   * refresh started (or the page was left) meanwhile, so an old response never overwrites a new one.
+   */
+  beginLoad() {
+    this.#loadSeq += 1;
+    return this.#loadSeq;
+  }
+
+  /** @param {number} ticket */
+  isStale(ticket) {
+    return ticket !== this.#loadSeq || this.signal.aborted;
+  }
+
+  /** Called when refresh() fails; list pages clear their loading state. @param {unknown} _err */
+  onLoadError(_err) {}
+
   /** refresh() with errors reported as a toast instead of breaking the page. */
   async safeRefresh() {
     try {
       await this.refresh();
     } catch (err) {
+      this.onLoadError(err);
       if (/** @type {any} */ (err)?.status !== 401) {
         this.app.toaster.error('Could not load data', /** @type {Error} */ (err).message);
       }

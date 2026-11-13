@@ -23,6 +23,7 @@ export class CommandPalette {
     placeholder: 'Search patients, staff, appointments, or type a command…', 'aria-label': 'Search', autocomplete: 'off', spellcheck: 'false',
   });
   #list = h('ul', { class: 'palette-results', id: 'palette-list', role: 'listbox', 'aria-label': 'Results' });
+  #status = h('div', { class: 'sr-only', role: 'status' });
   /** @type {Command[]} */
   #results = [];
   #active = 0;
@@ -32,7 +33,7 @@ export class CommandPalette {
   /** @param {import('../App.js').App} app */
   constructor(app) {
     this.#app = app;
-    this.#dialog.append(h('div', { class: 'palette-input' }, icon('search'), this.#input, h('span', { class: 'kbd' }, 'Esc')), this.#list);
+    this.#dialog.append(h('div', { class: 'palette-input' }, icon('search'), this.#input, h('span', { class: 'kbd' }, 'Esc')), this.#list, this.#status);
     this.#input.addEventListener('input', () => this.#search());
     this.#input.addEventListener('keydown', (e) => this.#keys(e));
     this.#dialog.addEventListener('click', (e) => {
@@ -109,11 +110,16 @@ export class CommandPalette {
   }
 
   #paint() {
+    this.#status.textContent = this.#results.length === 0 ? 'No matches.' : `${this.#results.length} results.`;
     if (this.#results.length === 0) {
-      this.#list.replaceChildren(h('li', { class: 'palette-empty', role: 'presentation' }, 'No matches. Try a name, ID or page.'));
+      this.#list.replaceChildren();
+      this.#list.after(this.#status);
+      this.#status.className = 'palette-empty';
+      this.#status.textContent = 'No matches. Try a name, ID or page.';
       this.#input.removeAttribute('aria-activedescendant');
       return;
     }
+    this.#status.className = 'sr-only';
     /** @type {Node[]} */
     const items = [];
     let group = '';

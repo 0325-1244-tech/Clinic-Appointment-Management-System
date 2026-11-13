@@ -1,6 +1,5 @@
-# Shell scripts and the Dockerfile must keep Unix line endings to run in the container.
+# Shell scripts must keep Unix line endings.
 *.sh text eol=lf
-Dockerfile text eol=lf
 
 # JavaScript web version: keep LF line endings
 web/** text eol=lf

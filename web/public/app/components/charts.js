@@ -55,13 +55,12 @@ export class Chart {
       h('thead', null, h('tr', null, head.map((c) => h('th', { scope: 'col' }, h('div', { class: 'th-inner' }, c))))),
       h('tbody', null, rows.map((r) => h('tr', null, r.map((c) => h('td', null, String(c)))))));
     const toggle = h('button', {
-      class: 'btn btn-ghost btn-sm data-table-toggle', type: 'button', 'aria-expanded': 'false',
+      class: 'btn btn-ghost btn-sm data-table-toggle', type: 'button', 'aria-pressed': 'false',
       onclick: () => {
         const show = dataTable.hidden;
         dataTable.hidden = !show;
         picture.toggleAttribute('hidden', show);
-        toggle.setAttribute('aria-expanded', String(show));
-        toggle.textContent = show ? 'Show as chart' : 'Show as table';
+        toggle.setAttribute('aria-pressed', String(show));
       },
     }, 'Show as table');
     return h('figure', { class: 'chart-figure', style: { margin: '0' } },

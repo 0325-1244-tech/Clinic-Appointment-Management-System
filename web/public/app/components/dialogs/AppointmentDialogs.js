@@ -124,7 +124,16 @@ export class AppointmentDialog extends FormDialog {
       return;
     }
     this.#slotStatus.textContent = 'Loading open slots…';
-    const slots = await this.#app.api.slots(staff.id, date, this.#existing?.id);
+    /** @type {string[]} */
+    let slots;
+    try {
+      slots = await this.#app.api.slots(staff.id, date, this.#existing?.id);
+    } catch (err) {
+      if (token === this.#loadToken) {
+        this.#slotStatus.textContent = `Could not load open slots: ${/** @type {Error} */ (err).message}`;
+      }
+      return;
+    }
     if (token !== this.#loadToken) {
       return;
     }

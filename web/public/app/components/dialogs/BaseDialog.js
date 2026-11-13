@@ -112,6 +112,9 @@ export class BaseDialog {
     this.#dialog.remove();
     if (this.#opener instanceof HTMLElement && this.#opener.isConnected) {
       this.#opener.focus();
+    } else {
+      // The opener was re-rendered (e.g. a table row): go to the selected row, or the page heading.
+      /** @type {HTMLElement | null} */ (document.querySelector('tr[aria-selected="true"], main h1'))?.focus();
     }
   }
 

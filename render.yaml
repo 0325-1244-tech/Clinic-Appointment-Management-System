@@ -1,14 +1,28 @@
-# Render Blueprint: deploys CareConnect as a Docker web service.
-# In Render: New + -> Blueprint -> pick this repository.
+# Render Blueprint: deploys the JavaScript version of CareConnect as a Node web service.
+# In Render: New + -> Blueprint -> pick this repository and the `javascript-version` branch.
 services:
   - type: web
-    name: careconnect-clinic
-    runtime: docker
+    name: careconnect-web
+    runtime: node
     plan: free
-    dockerfilePath: ./Dockerfile
-    healthCheckPath: /vnc.html
+    rootDir: web
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
-      # Password asked for when the page opens. Render prompts you for it when the
-      # Blueprint is created. Use up to 8 characters (VNC ignores the rest).
-      - key: VNC_PASSWORD
-        sync: false
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      # The clinic's clock. The app also defaults to Asia/Manila on its own.
+      - key: CLINIC_TIME_ZONE
+        value: Asia/Manila
+      # Shows the demo accounts on the sign-in page. To hide them, set this to "false" and add
+      # ADMIN_PASSWORD, RECEPTION_PASSWORD and DOCTOR_PASSWORD (10+ characters) in the dashboard.
+      - key: DEMO_MODE
+        value: "true"
+      # json (default) or sqlite. Note: the free plan's disk is temporary, so data
+      # returns to the sample data after every deploy or restart.
+      - key: STORAGE
+        value: json

@@ -16,7 +16,8 @@
     <h1>Now serving</h1>
     <div class="board-clock"><time id="board-time">--:--</time><span id="board-date"></span></div>
   </header>
-  <main id="board" class="board-grid" aria-live="polite" aria-busy="true"></main>
+  <main id="board" class="board-grid" aria-busy="true"></main>
+  <div id="board-announce" class="sr-only" role="status" aria-live="polite"></div>
   <footer class="board-foot"><span id="board-status" role="status">Connecting…</span><span>Please wait for your ticket number to be called.</span></footer>
 </body>
 </html>

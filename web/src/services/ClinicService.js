@@ -74,7 +74,7 @@ export class ClinicService extends EventEmitter {
   /** @param {Patient} patient */
   addPatient(patient) {
     this.#db.patients.add(patient);
-    this.#notify('patient.registered', 'patient', patient.id, `Registered patient ${patient.fullName}`);
+    this.#notify('patient.registered', 'patient', patient.id, `Registered patient ${patient.id}`);
     return patient;
   }
 
@@ -105,7 +105,7 @@ export class ClinicService extends EventEmitter {
     patient.address = candidate.address;
     patient.bloodType = candidate.bloodType;
     this.#db.patients.update(patient);
-    this.#notify('patient.updated', 'patient', patient.id, `Updated patient ${patient.fullName}`);
+    this.#notify('patient.updated', 'patient', patient.id, `Updated patient ${patient.id}`);
     return patient;
   }
 
@@ -118,7 +118,7 @@ export class ClinicService extends EventEmitter {
       );
     }
     this.#db.patients.remove(patient.id);
-    this.#notify('patient.removed', 'patient', patient.id, `Removed patient ${patient.fullName}`);
+    this.#notify('patient.removed', 'patient', patient.id, `Removed patient ${patient.id}`);
   }
 
   /** @param {string} id */
@@ -293,7 +293,7 @@ export class ClinicService extends EventEmitter {
     });
     this.#db.appointments.add(appointment);
     this.#notify('appointment.booked', 'appointment', appointment.id,
-      `Booked ${appointment.patient.fullName} with ${staff.getDisplayName()} on ${appointment.date} at ${appointment.time}`);
+      `Booked ${appointment.patient.id} with ${staff.id} on ${appointment.date} at ${appointment.time}`);
     return appointment;
   }
 
@@ -327,7 +327,7 @@ export class ClinicService extends EventEmitter {
     this.#ensureScheduled(appointment);
     appointment.cancel(reason);
     this.#db.appointments.update(appointment);
-    this.#notify('appointment.cancelled', 'appointment', appointment.id, appointment.remarks);
+    this.#notify('appointment.cancelled', 'appointment', appointment.id, 'Cancelled with a reason');
     return appointment;
   }
 

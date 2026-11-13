@@ -78,7 +78,9 @@ export class CalendarPage extends BasePage {
       ? `${from.formatMedium()} – ${to.formatMedium()}`
       : from.formatLong();
     const staffId = this.#view === 'week' ? this.#staffSelect.value : undefined;
+    const ticket = this.beginLoad();
     const appointments = await this.app.api.appointments({ from: from.toString(), to: to.toString(), staffId });
+    if (this.isStale(ticket)) return;
     if (this.#view === 'week') {
       const staff = this.#staff.find((s) => s.id === staffId) ?? this.#staff[0];
       this.#drawColumns(days.map((d) => ({ date: d, staff, heading: [d.dayOfWeek.shortLabel, String(d.day)] })), appointments);
@@ -115,8 +117,9 @@ export class CalendarPage extends BasePage {
     const cols = [times];
     for (const { date, staff, heading } of columns) {
       const works = staff.isAvailableOn(date);
-      heads.push(h('div', { class: ['cal-head', date.equals(today) && this.#view === 'week' ? 'today' : '', works ? '' : 'off'] },
-        h('span', null, heading[0]), h('strong', null, heading[1])));
+      const isToday = date.equals(today) && this.#view === 'week';
+      heads.push(h('div', { class: ['cal-head', isToday ? 'today' : '', works ? '' : 'off'], 'aria-current': isToday ? 'date' : undefined },
+        h('span', null, heading[0]), h('strong', null, heading[1]), isToday ? h('span', { class: 'today-mark' }, 'Today') : null));
       const col = h('div', { class: ['cal-col', works ? '' : 'off'], style: { height: `${height}px` }, role: 'group', 'aria-label': `${heading.join(' ')} ${date.formatMedium()}` });
       const mine = appointments.filter((a) => a.staff.id === staff.id && a.date.equals(date));
       if (works) {
@@ -157,7 +160,7 @@ export class CalendarPage extends BasePage {
         const draggable = a.isActive() && canManage && !clock.isPast(a.date, a.time);
         const event = h('button', {
           type: 'button', class: ['cal-event', a.status.code], draggable: draggable ? 'true' : 'false',
-          style: { top: y(a.time.totalMinutes), height: `${Math.max(22, a.staff.getSlotDurationMinutes() * PX_PER_MINUTE - 2)}px` },
+          style: { top: y(a.time.totalMinutes), height: `${Math.max(24, a.staff.getSlotDurationMinutes() * PX_PER_MINUTE - 2)}px` },
           'aria-label': `${a.time.format12h()} ${a.patient.fullName}, ${a.type.label}, ${a.status.label}. Open details.`,
           onclick: async () => {
             if (await this.app.actions.details(a)) await this.safeRefresh();
@@ -188,14 +191,19 @@ export class CalendarPage extends BasePage {
   }
 
   #paintViewButtons() {
-    this.#viewButtons.replaceChildren(...[['week', 'Week (one staff)'], ['day', 'Day (whole clinic)']].map(([v, label]) => h('button', {
-      type: 'button', 'aria-pressed': String(this.#view === v),
-      onclick: () => {
-        this.#view = /** @type {'week' | 'day'} */ (v);
-        this.#paintViewButtons();
-        this.safeRefresh();
-      },
-    }, label)));
+    if (this.#viewButtons.childElementCount === 0) {
+      this.#viewButtons.append(...[['week', 'Week (one staff)'], ['day', 'Day (whole clinic)']].map(([v, label]) => h('button', {
+        type: 'button', dataset: { value: v },
+        onclick: () => {
+          this.#view = /** @type {'week' | 'day'} */ (v);
+          this.#paintViewButtons();
+          this.safeRefresh();
+        },
+      }, label)));
+    }
+    for (const b of this.#viewButtons.querySelectorAll('button')) {
+      b.setAttribute('aria-pressed', String(b.dataset.value === this.#view));
+    }
   }
 
   /** @param {number} direction */

@@ -18,7 +18,11 @@ export function readCookie(req, name) {
   for (const part of header.split(';')) {
     const [key, ...rest] = part.trim().split('=');
     if (key === name) {
-      return decodeURIComponent(rest.join('='));
+      try {
+        return decodeURIComponent(rest.join('='));
+      } catch {
+        return undefined;
+      }
     }
   }
   return undefined;
@@ -82,6 +86,10 @@ export function sameOriginWrites(req, _res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     next();
     return;
+  }
+  const fetchSite = req.headers['sec-fetch-site'];
+  if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
+    throw new ForbiddenError('Cross-site requests are not allowed.');
   }
   const origin = req.headers.origin;
   if (origin) {

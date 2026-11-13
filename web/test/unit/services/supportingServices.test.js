@@ -75,7 +75,7 @@ describe('AuditLog (observer)', () => {
     assert.equal(first.actorRole, 'Receptionist');
     assert.equal(first.action, 'patient.updated');
     assert.equal(first.entityId, 'P-0001');
-    assert.equal(first.summary, 'Updated patient Juanito Dela Cruz');
+    assert.equal(first.summary, 'Updated patient P-0001', 'IDs, not names, in the audit log');
     assert.ok(Date.parse(first.at) > 0);
     assert.equal(latest.actor, 'system', 'changes outside a request are made by "system"');
     assert.equal(log.list({ entityId: 'S-0006' }).length, 1);
@@ -123,10 +123,11 @@ describe('QueueService', () => {
 
     const board = queue.board();
     const santos = board.find((row) => row.staffId === 'S-0001');
-    assert.deepEqual(santos?.nowServing, { ticket: juan.id, initials: 'J.D.' });
+    assert.deepEqual(santos?.nowServing, { ticket: 'Q-001', initials: 'J.D.' });
+    assert.equal(queue.ticketOf(paolo), 'Q-002');
     assert.equal(santos?.staffName, 'Dr. Maria Santos');
     const nurse = board.find((row) => row.staffId === 'S-0005');
-    assert.deepEqual(nurse?.waiting, [{ ticket: paolo.id, initials: 'P.M.' }]);
+    assert.deepEqual(nurse?.waiting, [{ ticket: 'Q-002', initials: 'P.M.' }]);
     assert.equal(JSON.stringify(board).includes('Juan') || JSON.stringify(board).includes('Mercado'), false, 'board never shows patient names');
   });
 
@@ -171,7 +172,13 @@ describe('QueueService', () => {
     queue.remove(other);
     assert.equal(queue.entries().length, 0);
     queue.checkIn(other);
+    let updates = 0;
+    queue.on('update', () => {
+      updates += 1;
+    });
     clock.set('2026-11-12');
+    queue.tick();
+    assert.equal(updates, 1, 'the board is told when the day rolls over');
     assert.equal(queue.entries().length, 0);
   });
 });

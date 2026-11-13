@@ -97,7 +97,7 @@ export class FormDialog extends BaseDialog {
       control.setAttribute('aria-required', 'true');
     }
     control.setAttribute('aria-describedby', [hintId, errorId].filter(Boolean).join(' '));
-    const error = h('div', { class: 'error', id: errorId, hidden: true });
+    const error = h('div', { class: 'error', id: errorId, role: 'alert', hidden: true });
     this.#fields.set(name, { control, error });
     const isGroup = control.getAttribute('role') === 'group' || control.getAttribute('role') === 'radiogroup';
     if (isGroup) {
@@ -127,7 +127,10 @@ export class FormDialog extends BaseDialog {
       target.error.replaceChildren(icon('alert'), message);
       target.error.hidden = false;
       target.control.setAttribute('aria-invalid', 'true');
-      target.control.focus();
+      const focusable = target.control.matches('input, select, textarea, button')
+        ? target.control
+        : target.control.querySelector('input, select, textarea, button');
+      /** @type {HTMLElement | null} */ (focusable)?.focus();
     } else {
       this.#alert.replaceChildren(icon('alert'), h('span', null, message));
       this.#alert.hidden = false;

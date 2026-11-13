@@ -114,6 +114,11 @@ export class RateLimiter {
   /** @param {string} key */
   hit(key) {
     const now = this.#now();
+    if (this.#hits.size > 10_000) {
+      for (const [k, entry] of this.#hits) {
+        if (now >= entry.resetAt) this.#hits.delete(k);
+      }
+    }
     const entry = this.#hits.get(key);
     if (!entry || now >= entry.resetAt) {
       this.#hits.set(key, { count: 1, resetAt: now + this.#windowMs });

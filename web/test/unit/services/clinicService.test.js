@@ -64,7 +64,7 @@ describe('ClinicService: patients', () => {
     });
     assert.equal(p.id, 'P-0003');
     assert.equal(service.getPatientCount(), 3);
-    assert.deepEqual(events.at(-1), { action: 'patient.registered', entityType: 'patient', entityId: 'P-0003', summary: 'Registered patient Bea Navarro' });
+    assert.deepEqual(events.at(-1), { action: 'patient.registered', entityType: 'patient', entityId: 'P-0003', summary: 'Registered patient P-0003' });
   });
 
   it('updates all fields only when every field is valid', () => {

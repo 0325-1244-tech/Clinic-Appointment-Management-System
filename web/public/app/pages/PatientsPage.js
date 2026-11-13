@@ -71,7 +71,10 @@ export class PatientsPage extends ListPage {
     if (this.table.rows.length === 0) {
       this.table.loading = true;
     }
-    this.table.rows = await this.app.api.patients(this.search.value);
+    const ticket = this.beginLoad();
+    const rows = await this.app.api.patients(this.search.value);
+    if (this.isStale(ticket)) return;
+    this.table.rows = rows;
   }
 
   async #register() {

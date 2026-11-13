@@ -52,8 +52,14 @@ export class CsvWriter {
 
 /** @typedef {import('./Appointment.js').Appointment} Appointment */
 
-/** The Java version's "Export CSV" format for appointment records. */
-export const RECORD_CSV = new CsvWriter(/** @type {CsvColumn<Appointment>[]} */ ([
+/**
+ * The Java version's "Export CSV" format for appointment records.
+ * With findings: false, the clinical notes of completed visits are left out.
+ *
+ * @param {{ findings?: boolean }} [options]
+ */
+export function recordCsv({ findings = true } = {}) {
+  return new CsvWriter(/** @type {CsvColumn<Appointment>[]} */ ([
   { header: 'Appointment ID', value: (a) => a.id },
   { header: 'Date', value: (a) => a.date.toString() },
   { header: 'Time', value: (a) => a.time.toString() },
@@ -65,5 +71,6 @@ export const RECORD_CSV = new CsvWriter(/** @type {CsvColumn<Appointment>[]} */ 
   { header: 'Reason', value: (a) => a.reason },
   { header: 'Status', value: (a) => a.status.label },
   { header: 'Fee (PHP)', value: (a) => a.computeFee() },
-  { header: 'Remarks', value: (a) => a.remarks },
-]));
+  { header: 'Remarks', value: (a) => (!findings && a.status.code === 'COMPLETED' ? '(clinical notes hidden)' : a.remarks) },
+  ]));
+}

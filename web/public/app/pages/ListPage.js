@@ -29,6 +29,12 @@ export class ListPage extends BasePage {
     this.table.addEventListener('select', () => this.onSelectionChange());
   }
 
+  /** @override @param {unknown} err */
+  onLoadError(err) {
+    this.table.empty = { title: 'Could not load this list', message: /** @type {Error} */ (err)?.message };
+    this.table.rows = [];
+  }
+
   /** Extra filter controls for the toolbar. @returns {import('../core/dom.js').Child} */
   filters() {
     return null;

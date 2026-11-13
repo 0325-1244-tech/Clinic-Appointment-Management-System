@@ -69,7 +69,9 @@ export class DashboardPage extends BasePage {
   }
 
   async refresh() {
+    const ticket = this.beginLoad();
     const [d, a] = await Promise.all([this.app.api.dashboard(), this.app.api.analytics(14)]);
+    if (this.isStale(ticket)) return;
     this.#cards.patients.setAttribute('value', String(d.patientCount));
     this.#cards.patients.setAttribute('note', this.app.staffScope ? 'seen by you' : 'registered');
     this.#cards.staff.setAttribute('value', String(d.activeStaffCount));
@@ -88,9 +90,15 @@ export class DashboardPage extends BasePage {
       a.feesByRole.map((/** @type {any} */ f) => ({ label: `${f.role}s`, value: f.amount, role: f.role, note: `${f.visits} visit(s)` })), { money: true }).element());
     replace(this.#charts.busiest, new BarListChart('Busiest staff',
       a.busiestStaff.map((/** @type {any} */ b) => ({ label: b.name, value: b.count, role: b.role, note: b.role }))).element());
+    // Redraw the timeline every minute so the "now" line moves; one timer per page.
     clearInterval(this.#timer);
     this.#timer = window.setInterval(() => this.#renderDuty(d.staffOnDuty, d.todaysAppointments), 60_000);
-    this.signal.addEventListener('abort', () => clearInterval(this.#timer));
+  }
+
+  /** @override */
+  unmount() {
+    clearInterval(this.#timer);
+    super.unmount();
   }
 
   /** @param {Appointment[]} list */

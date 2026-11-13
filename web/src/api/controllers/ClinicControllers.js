@@ -2,8 +2,7 @@
 import { Permission } from '../../auth/AccessPolicy.js';
 import { BadRequestError } from '../../auth/errors.js';
 import { AppointmentStatus } from '../../domain/AppointmentStatus.js';
-import { RECORD_CSV } from '../../domain/CsvWriter.js';
-import { NotFoundError } from '../../domain/errors.js';
+import { recordCsv } from '../../domain/CsvWriter.js';
 import { CalendarDate } from '../../domain/time/CalendarDate.js';
 import { requirePermission as can } from '../middleware.js';
 import { Schemas } from '../validation.js';
@@ -22,7 +21,7 @@ export class PatientController extends Controller {
   /** @param {import('express').Router} r */
   routes(r) {
     r.get('/', can(Permission.PATIENTS_READ), (req, res) => {
-      const list = this.service.searchPatients(this.query(req, 'q')).filter((p) => this.#visible(req, p));
+      const list = this.service.searchPatients(this.query(req, 'q')).filter((p) => this.patientVisible(req, p));
       res.json({ patients: list.map(Views.patient) });
     });
     r.post('/', can(Permission.PATIENTS_WRITE), (req, res) => {
@@ -30,26 +29,26 @@ export class PatientController extends Controller {
       res.status(201).location(`${this.basePath}/${patient.id}`).json({ patient: Views.patient(patient) });
     });
     r.get('/:id', can(Permission.PATIENTS_READ), (req, res) => {
-      res.json({ patient: Views.patient(this.#patientFor(req)) });
+      res.json({ patient: Views.patient(this.patientFor(req, String(req.params.id))) });
     });
     r.put('/:id', can(Permission.PATIENTS_WRITE), (req, res) => {
-      const patient = this.service.updatePatient(this.#patientFor(req), /** @type {any} */ (Schemas.patient.parse(req.body)));
+      const patient = this.service.updatePatient(this.patientFor(req, String(req.params.id)), /** @type {any} */ (Schemas.patient.parse(req.body)));
       res.json({ patient: Views.patient(patient) });
     });
     r.delete('/:id', can(Permission.PATIENTS_WRITE), (req, res) => {
-      this.service.removePatient(this.#patientFor(req));
+      this.service.removePatient(this.patientFor(req, String(req.params.id)));
       res.status(204).end();
     });
     r.get('/:id/profile', can(Permission.PATIENTS_READ), (req, res) => {
-      const patient = this.#patientFor(req);
+      const patient = this.patientFor(req, String(req.params.id));
       const policy = this.policy(req);
       const all = this.service.findAppointments(patient).filter((a) => policy.canAccess(a));
       const completed = all.filter((a) => a.status === AppointmentStatus.COMPLETED);
       const upcoming = all.filter((a) => a.isActive() && !this.service.clock.isPast(a.date, a.time));
       res.json({
         patient: Views.patient(patient),
-        appointments: all.map(Views.appointment),
-        upcoming: upcoming.map(Views.appointment),
+        appointments: all.map(this.view(req)),
+        upcoming: upcoming.map(this.view(req)),
         totals: {
           visits: completed.length,
           billed: this.service.computeTotal(completed),
@@ -60,20 +59,6 @@ export class PatientController extends Controller {
     });
   }
 
-  /** A doctor only sees patients who have an appointment with them. @param {import('express').Request} req @param {Patient} p */
-  #visible(req, p) {
-    const policy = this.policy(req);
-    return !policy.staffScope || this.service.findAppointments(p).some((a) => policy.canAccess(a));
-  }
-
-  /** @param {import('express').Request} req */
-  #patientFor(req) {
-    const patient = this.service.getPatient(String(req.params.id));
-    if (!this.#visible(req, patient)) {
-      throw new NotFoundError(`Patient ${patient.id} was not found.`);
-    }
-    return patient;
-  }
 }
 
 /** /api/staff: add, edit, activate, delete, open slots. */
@@ -134,7 +119,7 @@ export class AppointmentController extends Controller {
   /** @param {import('express').Router} r */
   routes(r) {
     r.get('/', can(Permission.APPOINTMENTS_READ), (req, res) => {
-      res.json({ appointments: this.#list(req).map(Views.appointment) });
+      res.json({ appointments: this.#list(req).map(this.view(req)) });
     });
     r.post('/', can(Permission.APPOINTMENTS_BOOK), (req, res) => {
       const body = Schemas.booking.parse(req.body);
@@ -146,31 +131,33 @@ export class AppointmentController extends Controller {
         type: body.type,
         reason: body.reason,
       });
-      res.status(201).location(`${this.basePath}/${appointment.id}`).json({ appointment: Views.appointment(appointment) });
+      res.status(201).location(`${this.basePath}/${appointment.id}`).json({ appointment: this.view(req)(appointment) });
     });
     r.get('/:id', can(Permission.APPOINTMENTS_READ), (req, res) => {
       const appointment = this.appointmentFor(req, String(req.params.id));
-      res.json({ appointment: Views.appointment(appointment), summary: appointment.getSummary() });
+      const view = /** @type {any} */ (this.view(req)(appointment));
+      // The summary text includes the findings, so it follows the same rule as the remarks field.
+      res.json({ appointment: view, summary: view.findingsHidden ? appointment.getSummary().replace(/Remarks: {10}.*$/, 'Remarks:          (clinical notes hidden)') : appointment.getSummary() });
     });
     r.post('/:id/reschedule', can(Permission.APPOINTMENTS_MANAGE), (req, res) => {
       const { date, time } = Schemas.reschedule.parse(req.body);
       const appointment = this.service.rescheduleAppointment(this.appointmentFor(req, String(req.params.id)), date, time);
-      res.json({ appointment: Views.appointment(appointment) });
+      res.json({ appointment: this.view(req)(appointment) });
     });
     r.post('/:id/complete', can(Permission.APPOINTMENTS_COMPLETE), (req, res) => {
       const { findings } = Schemas.complete.parse(req.body);
       const appointment = this.service.completeAppointment(this.appointmentFor(req, String(req.params.id)), findings);
-      res.json({ appointment: Views.appointment(appointment) });
+      res.json({ appointment: this.view(req)(appointment) });
     });
     r.post('/:id/cancel', can(Permission.APPOINTMENTS_MANAGE), (req, res) => {
       const { reason } = Schemas.cancel.parse(req.body);
       const appointment = this.service.cancelAppointment(this.appointmentFor(req, String(req.params.id)), reason);
-      res.json({ appointment: Views.appointment(appointment) });
+      res.json({ appointment: this.view(req)(appointment) });
     });
     r.post('/:id/no-show', can(Permission.APPOINTMENTS_MANAGE), (req, res) => {
       Schemas.empty.parse(req.body ?? {});
       const appointment = this.service.markNoShow(this.appointmentFor(req, String(req.params.id)));
-      res.json({ appointment: Views.appointment(appointment) });
+      res.json({ appointment: this.view(req)(appointment) });
     });
   }
 
@@ -215,7 +202,7 @@ export class RecordController extends Controller {
       const records = this.#records(req);
       const count = (/** @type {AppointmentStatus} */ s) => records.filter((a) => a.status === s).length;
       res.json({
-        records: records.map(Views.appointment),
+        records: records.map(this.view(req)),
         summary: {
           total: records.length,
           completed: count(AppointmentStatus.COMPLETED),
@@ -228,7 +215,11 @@ export class RecordController extends Controller {
     r.get('/export.csv', can(Permission.RECORDS_READ), (req, res) => {
       res.set('Content-Type', 'text/csv; charset=utf-8');
       res.set('Content-Disposition', 'attachment; filename="appointment-records.csv"');
-      res.send(String.fromCharCode(0xfeff) + `${RECORD_CSV.write(this.#records(req))}`);
+      const records = this.#records(req);
+      this.context.audit.record({
+        action: 'records.exported', entityType: 'record', entityId: this.query(req, 'patientId') ?? 'all', summary: `Exported ${records.length} record(s) to CSV`,
+      });
+      res.send(String.fromCharCode(0xfeff) + recordCsv({ findings: this.policy(req).can(Permission.FINDINGS_READ) }).write(records));
     });
   }
 
@@ -236,7 +227,7 @@ export class RecordController extends Controller {
   #records(req) {
     const policy = this.policy(req);
     const patientId = this.query(req, 'patientId');
-    const patient = patientId ? this.service.getPatient(patientId) : undefined;
+    const patient = patientId ? this.patientFor(req, patientId) : undefined;
     return this.service.getRecords({ patient, keyword: this.query(req, 'q') }).filter((a) => policy.canAccess(a));
   }
 }
@@ -254,7 +245,7 @@ export class StatsController extends Controller {
       res.json({
         ...d,
         today: this.service.clock.today().toString(),
-        todaysAppointments: d.todaysAppointments.map(Views.appointment),
+        todaysAppointments: d.todaysAppointments.map(this.view(req)),
         staffOnDuty: d.staffOnDuty.map(Views.staff),
       });
     });

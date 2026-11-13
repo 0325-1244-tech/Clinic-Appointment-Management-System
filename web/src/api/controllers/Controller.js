@@ -1,6 +1,9 @@
 // @ts-check
 import express from 'express';
+import { Permission } from '../../auth/AccessPolicy.js';
 import { ForbiddenError } from '../../auth/errors.js';
+import { NotFoundError } from '../../domain/errors.js';
+import { Views } from '../views.js';
 import { abstractClass, abstractMethod } from '../../domain/contracts.js';
 
 /** @typedef {import('../middleware.js').AppRequest} AppRequest */
@@ -90,6 +93,43 @@ export class Controller {
     const appointment = this.service.getAppointment(id);
     this.policy(req).requireAccess(appointment);
     return appointment;
+  }
+
+  /**
+   * Turns appointments into JSON for this user. Clinical findings are only
+   * included for roles allowed to read them.
+   *
+   * @param {import('express').Request} req
+   * @returns {(a: import('../../domain/Appointment.js').Appointment) => object}
+   */
+  view(req) {
+    const findings = this.policy(req).can(Permission.FINDINGS_READ);
+    return (a) => Views.appointment(a, { findings });
+  }
+
+  /**
+   * A doctor only sees patients who have an appointment with them.
+   *
+   * @param {import('express').Request} req
+   * @param {import('../../domain/Patient.js').Patient} patient
+   */
+  patientVisible(req, patient) {
+    const policy = this.policy(req);
+    return !policy.staffScope || this.service.findAppointments(patient).some((a) => policy.canAccess(a));
+  }
+
+  /**
+   * A patient the signed-in user may see (404 otherwise, so IDs cannot be probed).
+   *
+   * @param {import('express').Request} req
+   * @param {string} id
+   */
+  patientFor(req, id) {
+    const patient = this.service.getPatient(id);
+    if (!this.patientVisible(req, patient)) {
+      throw new NotFoundError(`Patient ${patient.id} was not found.`);
+    }
+    return patient;
   }
 
   /**

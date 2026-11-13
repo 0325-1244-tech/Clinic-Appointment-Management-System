@@ -138,6 +138,8 @@ export class App extends EventTarget {
   async signOut() {
     try {
       await this.api.logout();
+    } catch {
+      // Signing out locally is still correct if the server cannot be reached.
     } finally {
       this.user = null;
       this.#showLogin();
@@ -175,8 +177,8 @@ export class App extends EventTarget {
     this.#paintThemeButton(themeButton);
     const topbar = h('header', { class: 'topbar' },
       menuButton,
-      h('button', { class: 'search-trigger', type: 'button', 'aria-label': 'Search patients, staff, appointments and pages (Ctrl+K)', onclick: () => this.openPalette() },
-        icon('search'), h('span', { class: 'label' }, 'Search patients, staff, pages…'), h('span', { class: 'kbd', 'aria-hidden': 'true' }, 'Ctrl K')),
+      h('button', { class: 'search-trigger', type: 'button', 'aria-keyshortcuts': 'Control+K', onclick: () => this.openPalette() },
+        icon('search'), h('span', { class: 'label' }, 'Search patients, staff, pages…'), h('span', { class: 'sr-only' }, 'Search'), h('span', { class: 'kbd', 'aria-hidden': 'true' }, 'Ctrl K')),
       h('div', { class: 'spacer' }),
       themeButton,
       h('div', { class: 'user-chip' },
@@ -188,6 +190,7 @@ export class App extends EventTarget {
         e.preventDefault();
         this.#content.querySelector('h1')?.focus();
       } }, 'Skip to content'),
+      this.config.demoMode ? h('div', { class: 'demo-banner', role: 'note' }, 'Demo mode: sample data only. Do not enter real patient information.') : null,
       h('div', { class: 'app' }, sidebar, h('div', { class: 'scrim', onclick: () => this.#closeNav() }), h('div', { class: 'main' }, topbar, this.#content)));
     this.#palette = new CommandPalette(this);
     this.#installShortcuts();
@@ -248,16 +251,14 @@ export class App extends EventTarget {
         return;
       }
       const target = /** @type {HTMLElement} */ (e.target);
-      const typing = target.closest('input, textarea, select, [contenteditable="true"], dialog');
-      if (typing || e.ctrlKey || e.metaKey || e.altKey) {
-        return;
-      }
-      if (e.key === 'n' && this.can('appointments:book')) {
+      // Alt+N books an appointment (a modifier key, so it never fires while typing: WCAG 2.1.4).
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'n' && this.can('appointments:book') && !target.closest('dialog')) {
         e.preventDefault();
         this.actions.book().then((changed) => changed && this.refreshPage());
-      } else if (e.key === '/') {
-        e.preventDefault();
-        /** @type {HTMLElement | null} */ (this.#content.querySelector('input[type="search"]'))?.focus();
+      }
+      if (e.key === 'Escape' && this.#root.querySelector('.app.nav-open')) {
+        this.#closeNav();
+        /** @type {HTMLElement | null} */ (this.#root.querySelector('.menu-button'))?.focus();
       }
     });
   }

@@ -35,7 +35,7 @@ export class Toaster {
    * @param {'success' | 'error'} [options.kind]
    * @param {number} [options.duration] ms
    * @param {{ label: string, onAction: () => void }} [options.action]
-   * @returns {{ dismiss: () => void, done: Promise<'timeout' | 'action' | 'dismissed'> }}
+   * @returns {{ dismiss: () => void, done: Promise<'timeout' | 'action' | 'dismissed'>, actionButton: HTMLButtonElement | null }}
    */
   show({ title, detail, kind = 'success', duration = 4000, action }) {
     /** @type {(reason: 'timeout' | 'action' | 'dismissed') => void} */
@@ -74,7 +74,26 @@ export class Toaster {
     setTimeout(() => {
       announcer.textContent = `${title}${detail ? `. ${detail}` : ''}${action ? `. Press ${action.label} to reverse.` : ''}`;
     }, 50);
-    const timer = setTimeout(() => finish('timeout'), duration);
-    return { dismiss: () => finish('dismissed'), done };
+    // The timer pauses while the pointer or keyboard focus is on the toast (WCAG 2.2.1).
+    let remaining = duration;
+    let startedAt = Date.now();
+    let timer = setTimeout(() => finish('timeout'), remaining);
+    const pause = () => {
+      clearTimeout(timer);
+      remaining -= Date.now() - startedAt;
+      toast.classList.add('paused');
+    };
+    const resume = () => {
+      if (finished || toast.matches(':hover') || toast.contains(document.activeElement)) return;
+      startedAt = Date.now();
+      toast.classList.remove('paused');
+      timer = setTimeout(() => finish('timeout'), Math.max(remaining, 1500));
+    };
+    toast.addEventListener('pointerenter', pause);
+    toast.addEventListener('focusin', pause);
+    toast.addEventListener('pointerleave', resume);
+    toast.addEventListener('focusout', () => setTimeout(resume, 0));
+    const actionButton = /** @type {HTMLButtonElement | null} */ (action ? toast.querySelector('button.btn-secondary') : null);
+    return { dismiss: () => finish('dismissed'), done, actionButton };
   }
 }

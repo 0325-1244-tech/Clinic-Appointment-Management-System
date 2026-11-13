@@ -5,7 +5,7 @@ import { TextPromptDialog } from '../components/dialogs/FormDialog.js';
 
 /** @typedef {import('/domain/Appointment.js').Appointment} Appointment */
 
-const UNDO_SECONDS = 6;
+const UNDO_SECONDS = 10;
 
 /**
  * The appointment actions shared by every page (list, calendar, dashboard,
@@ -21,7 +21,8 @@ export class AppointmentActions {
   constructor(app) {
     this.#app = app;
     // If the tab closes during the undo window, the cancellation is still sent.
-    window.addEventListener('pagehide', () => {
+    window.addEventListener('pagehide', (event) => {
+      if (event.persisted) return; // kept in the back/forward cache: the timer will still run
       for (const [id, reason] of this.#pendingCancels) {
         fetch(`/api/appointments/${encodeURIComponent(id)}/cancel`, {
           method: 'POST', keepalive: true, credentials: 'same-origin',
@@ -33,6 +34,7 @@ export class AppointmentActions {
 
   /** @param {Appointment} appointment @returns {Promise<boolean>} */
   async details(appointment) {
+    if (this.#blocked(appointment)) return false;
     const choice = await new AppointmentDetailsDialog(this.#app, appointment).open();
     switch (choice) {
       case 'reschedule':
@@ -59,6 +61,7 @@ export class AppointmentActions {
 
   /** @param {Appointment} appointment */
   async reschedule(appointment) {
+    if (this.#blocked(appointment)) return false;
     const moved = await new AppointmentDialog(this.#app, { appointment }).load();
     if (moved) {
       this.#app.toaster.success(`Rescheduled ${moved.id}`, `${moved.date.formatMedium()} at ${moved.time.format12h()}`);
@@ -72,6 +75,7 @@ export class AppointmentActions {
    * @param {Appointment} appointment @param {string} date @param {string} time
    */
   async moveTo(appointment, date, time) {
+    if (this.#blocked(appointment)) return false;
     try {
       const moved = await this.#app.api.act(appointment.id, 'reschedule', { date, time });
       this.#app.toaster.success(`Moved ${moved.id}`, `${moved.date.formatMedium()} at ${moved.time.format12h()}`);
@@ -84,6 +88,7 @@ export class AppointmentActions {
 
   /** @param {Appointment} appointment */
   async complete(appointment) {
+    if (this.#blocked(appointment)) return false;
     const findings = await new TextPromptDialog({
       title: `Complete ${appointment.id}`,
       description: `${appointment.patient.fullName} · ${appointment.type.label}`,
@@ -107,6 +112,7 @@ export class AppointmentActions {
    * @param {Appointment} appointment
    */
   async cancel(appointment) {
+    if (this.#blocked(appointment)) return false;
     const reason = await new TextPromptDialog({
       title: `Cancel ${appointment.id}`,
       description: `${appointment.patient.fullName} · ${appointment.date.formatMedium()} at ${appointment.time.format12h()}`,
@@ -123,10 +129,11 @@ export class AppointmentActions {
     this.#app.emit('pending-cancel', appointment.id);
     const toast = this.#app.toaster.show({
       title: `Cancelling ${appointment.id}…`,
-      detail: `${appointment.patient.fullName}. You can undo this for ${UNDO_SECONDS} seconds.`,
+      detail: `${appointment.patient.fullName}. You can undo this for ${UNDO_SECONDS} seconds (paused while you hover or focus here).`,
       duration: UNDO_SECONDS * 1000,
       action: { label: 'Undo', onAction: () => {} },
     });
+    toast.actionButton?.focus();
     const outcome = await toast.done;
     this.#pendingCancels.delete(appointment.id);
     if (outcome === 'action') {
@@ -139,6 +146,7 @@ export class AppointmentActions {
 
   /** @param {Appointment} appointment */
   async noShow(appointment) {
+    if (this.#blocked(appointment)) return false;
     const ok = await new ConfirmDialog({
       title: 'Mark as no-show?',
       message: `${appointment.patient.fullName} did not arrive for ${appointment.id} (${appointment.time.format12h()}). No fee is charged. This cannot be undone.`,
@@ -149,6 +157,13 @@ export class AppointmentActions {
       return false;
     }
     return this.#run(() => this.#app.api.act(appointment.id, 'no-show'), `Marked ${appointment.id} as no-show`);
+  }
+
+  /** Refuses any other action on an appointment whose cancellation is still in its undo window. @param {Appointment} appointment */
+  #blocked(appointment) {
+    if (!this.#pendingCancels.has(appointment.id)) return false;
+    this.#app.toaster.error(`${appointment.id} is being cancelled`, 'Undo the cancellation first, or wait a few seconds.');
+    return true;
   }
 
   /** True while a cancellation is waiting in its undo window. @param {string} id */

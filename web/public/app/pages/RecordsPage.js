@@ -77,7 +77,9 @@ export class RecordsPage extends ListPage {
       this.#patient.append(...patients.map((p) => h('option', { value: p.id, selected: p.id === preset }, `${p.fullName} · ${p.id}`)));
     }
     if (this.table.rows.length === 0) this.table.loading = true;
+    const ticket = this.beginLoad();
     const { records, summary } = await this.app.api.records({ patientId: this.#patient.value || undefined, q: this.search.value });
+    if (this.isStale(ticket)) return;
     this.table.rows = records;
     this.#cards.total.setAttribute('value', String(summary.total));
     this.#cards.completed.setAttribute('value', String(summary.completed));

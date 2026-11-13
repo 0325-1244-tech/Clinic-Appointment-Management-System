@@ -44,6 +44,9 @@ class QueueBoard {
       const ticket = row.nowServing?.ticket ?? '';
       const changed = ticket !== '' && this.#serving.get(row.staffId) !== ticket;
       this.#serving.set(row.staffId, ticket);
+      if (changed) {
+        /** @type {HTMLElement} */ (document.getElementById('board-announce')).textContent = `Now serving ${ticket} at ${row.staffName}.`;
+      }
       return h('section', { class: ['board-card', `role-${row.role}`, changed ? 'called' : ''], 'aria-label': row.staffName },
         h('h2', null, row.staffName),
         h('div', { class: 'area' }, row.serviceArea),

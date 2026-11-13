@@ -19,6 +19,7 @@ Enumeration.seal(QueueState);
  * @property {QueueState} state
  * @property {string} checkedInAt  HH:MM clinic time
  * @property {string} [calledAt]
+ * @property {string} ticket       per-day queue number shown on the board, e.g. "Q-007"
  */
 
 /**
@@ -39,6 +40,7 @@ export class QueueService extends EventEmitter {
   #entries = new Map();
   /** @type {string} */
   #day = '';
+  #nextTicket = 1;
 
   /** @param {import('./ClinicService.js').ClinicService} service */
   constructor(service) {
@@ -67,8 +69,10 @@ export class QueueService extends EventEmitter {
     if (this.#entries.has(appointment.id)) {
       throw new ConflictError(`${appointment.patient.fullName} is already checked in.`);
     }
+    // The board shows a per-day queue number, not the appointment ID, so nobody can link a ticket to a record.
+    const ticket = `Q-${String(this.#nextTicket++).padStart(3, '0')}`;
     this.#entries.set(appointment.id, {
-      appointment, state: QueueState.WAITING, checkedInAt: this.#service.clock.now().time.toString(),
+      appointment, state: QueueState.WAITING, checkedInAt: this.#service.clock.now().time.toString(), ticket,
     });
     this.#changed();
   }
@@ -112,6 +116,11 @@ export class QueueService extends EventEmitter {
     return this.#entries.get(appointment.id)?.state;
   }
 
+  /** The queue number given at check-in. @param {Appointment} appointment */
+  ticketOf(appointment) {
+    return this.#entries.get(appointment.id)?.ticket;
+  }
+
   /**
    * What the waiting-area screen shows. Patient privacy: only the ticket
    * number and initials, never a full name.
@@ -123,7 +132,7 @@ export class QueueService extends EventEmitter {
       .map((staff) => {
         const mine = entries.filter((e) => e.appointment.staff.equals(staff));
         const serving = mine.find((e) => e.state === QueueState.SERVING);
-        const ticket = (/** @type {QueueEntry} */ e) => ({ ticket: e.appointment.id, initials: e.appointment.patient.initials });
+        const ticket = (/** @type {QueueEntry} */ e) => ({ ticket: e.ticket, initials: e.appointment.patient.initials });
         return {
           staffId: staff.id,
           staffName: staff.getDisplayName(),
@@ -135,12 +144,22 @@ export class QueueService extends EventEmitter {
       });
   }
 
+  /** Checks for a new day; the server calls this regularly so the board clears at midnight. */
+  tick() {
+    this.#rollOver();
+  }
+
   /** The queue only covers today; it empties itself when the date changes. */
   #rollOver() {
     const today = this.#service.clock.today().toString();
     if (this.#day !== today) {
+      const hadEntries = this.#entries.size > 0;
       this.#day = today;
       this.#entries.clear();
+      this.#nextTicket = 1;
+      if (hadEntries) {
+        this.#changed();
+      }
     }
   }
 

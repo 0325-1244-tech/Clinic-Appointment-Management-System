@@ -110,9 +110,9 @@ export class AuditLog {
    * Adds an entry. The actor is the signed-in user of the current request.
    *
    * @param {{ action: string, entityType: string, entityId: string, summary: string }} event
+   * @param {import('./RequestContext.js').Actor} [actor] defaults to the signed-in user of the current request
    */
-  record({ action, entityType, entityId, summary }) {
-    const actor = RequestContext.actor();
+  record({ action, entityType, entityId, summary }, actor = RequestContext.actor()) {
     const entry = new AuditEntry({
       id: this.#repository.nextId(),
       at: new Date().toISOString(),

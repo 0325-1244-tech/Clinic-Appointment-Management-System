@@ -1,5 +1,6 @@
 // @ts-check
 import { abstractClass, abstractMethod } from '../domain/contracts.js';
+import { NotFoundError } from '../domain/errors.js';
 import { ForbiddenError } from './errors.js';
 import { UserRole } from './User.js';
 
@@ -24,6 +25,7 @@ export const Permission = Object.freeze({
   STATS_READ: 'stats:read',
   AUDIT_READ: 'audit:read',
   QUEUE_MANAGE: 'queue:manage',
+  FINDINGS_READ: 'findings:read', // clinical findings written when a visit is completed
 });
 
 /**
@@ -88,7 +90,8 @@ export class AccessPolicy {
   /** @param {Appointment} appointment */
   requireAccess(appointment) {
     if (!this.canAccess(appointment)) {
-      throw new ForbiddenError('You can only work with your own appointments.');
+      // 404, not 403, so other staff members' appointment IDs cannot be probed.
+      throw new NotFoundError(`Appointment ${appointment.id} was not found.`);
     }
   }
 
@@ -109,7 +112,7 @@ export class AdminPolicy extends AccessPolicy {
 /** Front desk: patients, booking and records. No staff changes, no clinical findings, no audit log. */
 export class ReceptionistPolicy extends AccessPolicy {
   /** @type {Set<string>} */
-  static #DENIED = new Set([Permission.STAFF_WRITE, Permission.APPOINTMENTS_COMPLETE, Permission.AUDIT_READ]);
+  static #DENIED = new Set([Permission.STAFF_WRITE, Permission.APPOINTMENTS_COMPLETE, Permission.AUDIT_READ, Permission.FINDINGS_READ]);
 
   /** @override @param {string} permission */
   can(permission) {
@@ -123,6 +126,7 @@ export class DoctorPolicy extends AccessPolicy {
   static #ALLOWED = new Set([
     Permission.PATIENTS_READ, Permission.STAFF_READ, Permission.APPOINTMENTS_READ, Permission.APPOINTMENTS_MANAGE,
     Permission.APPOINTMENTS_COMPLETE, Permission.RECORDS_READ, Permission.STATS_READ, Permission.QUEUE_MANAGE,
+    Permission.FINDINGS_READ,
   ]);
 
   #staffId;
@@ -130,6 +134,10 @@ export class DoctorPolicy extends AccessPolicy {
   /** @param {string} staffId */
   constructor(staffId) {
     super();
+    // Fail closed: without a staff link the doctor would otherwise see everyone's data.
+    if (!staffId) {
+      throw new TypeError('A doctor account must be linked to a staff record.');
+    }
     this.#staffId = staffId;
   }
 

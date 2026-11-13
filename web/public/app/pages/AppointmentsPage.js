@@ -41,7 +41,7 @@ export class AppointmentsPage extends ListPage {
   }
 
   get subtitle() {
-    return 'Double-click or press Enter on a row for full details. Press N to book.';
+    return 'Double-click or press Enter on a row for full details. Press Alt+N to book.';
   }
 
   get navKey() {
@@ -81,21 +81,29 @@ export class AppointmentsPage extends ListPage {
   }
 
   #paintPeriods() {
-    this.#periodButtons.replaceChildren(...PERIODS.map(([value, label]) => h('button', {
-      type: 'button', 'aria-pressed': String(value === this.#period),
-      onclick: () => {
-        this.#period = value;
-        this.#paintPeriods();
-        this.safeRefresh();
-      },
-    }, label)));
+    if (this.#periodButtons.childElementCount === 0) {
+      this.#periodButtons.append(...PERIODS.map(([value, label]) => h('button', {
+        type: 'button', dataset: { value },
+        onclick: () => {
+          this.#period = value;
+          this.#paintPeriods();
+          this.safeRefresh();
+        },
+      }, label)));
+    }
+    for (const b of this.#periodButtons.querySelectorAll('button')) {
+      b.setAttribute('aria-pressed', String(b.dataset.value === this.#period));
+    }
   }
 
   async refresh() {
     if (this.table.rows.length === 0) this.table.loading = true;
-    this.table.rows = await this.app.api.appointments({
+    const ticket = this.beginLoad();
+    const rows = await this.app.api.appointments({
       q: this.search.value, status: this.#status.value || undefined, period: this.#period || undefined,
     });
+    if (this.isStale(ticket)) return;
+    this.table.rows = rows;
     this.onSelectionChange();
   }
 

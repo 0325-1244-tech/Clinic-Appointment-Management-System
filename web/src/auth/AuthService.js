@@ -33,6 +33,7 @@ export class AuthService {
   #hasher;
   #sessions;
   #limiter;
+  #addressLimiter;
   #audit;
 
   /**
@@ -40,14 +41,16 @@ export class AuthService {
    * @param {import('../repositories/Repository.js').Repository<User>} [options.users]
    * @param {PasswordHasher} [options.hasher]
    * @param {SessionStore} [options.sessions]
-   * @param {RateLimiter} [options.limiter]
+   * @param {RateLimiter} [options.limiter]         failures per address + username
+   * @param {RateLimiter} [options.addressLimiter]  failures per address
    * @param {{ record(event: { action: string, entityType: string, entityId: string, summary: string }): unknown }} [options.audit]
    */
-  constructor({ users, hasher, sessions, limiter, audit } = {}) {
+  constructor({ users, hasher, sessions, limiter, addressLimiter, audit } = {}) {
     this.#users = users ?? new InMemoryRepository('U');
     this.#hasher = hasher ?? new PasswordHasher();
     this.#sessions = sessions ?? new SessionStore();
     this.#limiter = limiter ?? new RateLimiter({ max: 5, windowMinutes: 15 });
+    this.#addressLimiter = addressLimiter ?? new RateLimiter({ max: 20, windowMinutes: 15 });
     this.#audit = audit;
   }
 
@@ -94,19 +97,22 @@ export class AuthService {
    */
   async login(username, password, address) {
     const name = String(username ?? '').trim().toLowerCase();
-    const keys = [`ip:${address}`, `user:${name}`];
-    const wait = Math.max(...keys.map((k) => this.#limiter.retryAfter(k)));
+    // Per address + username (so nobody can lock a user out from elsewhere) and per address overall.
+    const pairKey = `${address}|${name}`;
+    const wait = Math.max(this.#limiter.retryAfter(pairKey), this.#addressLimiter.retryAfter(address));
     if (wait > 0) {
       throw new RateLimitError(`Too many sign-in attempts. Try again in ${Math.ceil(wait / 60)} minute(s).`, wait);
     }
     const user = this.#users.findWhere((u) => u.username === name)[0];
     const ok = user ? await user.verifyPassword(String(password ?? ''), this.#hasher) : await this.#fakeVerify();
     if (!user || !ok) {
-      keys.forEach((k) => this.#limiter.hit(k));
-      this.#audit?.record({ action: 'auth.failed', entityType: 'user', entityId: name.slice(0, 40) || '-', summary: 'Failed sign-in' });
+      this.#limiter.hit(pairKey);
+      this.#addressLimiter.hit(address);
+      this.#audit?.record({ action: 'auth.failed', entityType: 'user', entityId: name.replace(/[^\w.@-]/g, '').slice(0, 40) || '-', summary: 'Failed sign-in' });
       throw new AuthenticationError('Incorrect username or password.');
     }
-    keys.forEach((k) => this.#limiter.reset(k));
+    // Only this pair is cleared; the address counter keeps counting other guesses.
+    this.#limiter.reset(pairKey);
     return { user, token: this.#sessions.create(user.id) };
   }
 

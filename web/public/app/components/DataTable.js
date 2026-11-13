@@ -50,7 +50,7 @@ export class DataTable extends HTMLElement {
   /** @type {(row: T) => string} */
   #idOf = (row) => /** @type {any} */ (row).id;
   #label = '';
-  #footer = h('div', { class: 'table-foot' });
+  #footer = h('div', { class: 'table-foot', role: 'status' });
 
   /** @param {Column<T>[]} columns */
   set columns(columns) {
@@ -162,7 +162,6 @@ export class DataTable extends HTMLElement {
       tbody = h('tbody', null, rows.map((row) => {
         const id = this.#idOf(row);
         const selected = id === this.#selectedId;
-        const primary = this.#columns.find((c) => c.primary) ?? this.#columns[0];
         return h('tr', {
           tabindex: id === focusId ? '0' : '-1',
           'aria-selected': String(selected),
@@ -170,7 +169,6 @@ export class DataTable extends HTMLElement {
           onclick: () => this.select(id),
           ondblclick: () => this.#emit('activate', row),
           onkeydown: (/** @type {KeyboardEvent} */ e) => this.#onKey(e, rows, id),
-          'aria-label': primary?.sortValue ? String(primary.sortValue(row)) : undefined,
         }, this.#columns.map((c) => h('td', { 'data-label': c.label, class: c.align === 'right' ? 'align-right' : undefined }, c.render(row))));
       }));
     }
@@ -193,6 +191,8 @@ export class DataTable extends HTMLElement {
 
   /** @param {KeyboardEvent} e @param {T[]} rows @param {string} id */
   #onKey(e, rows, id) {
+    // Keys pressed on a link or button inside the row belong to that control.
+    if (e.target !== e.currentTarget) return;
     const index = rows.findIndex((r) => this.#idOf(r) === id);
     let next = -1;
     if (e.key === 'ArrowDown') next = Math.min(index + 1, rows.length - 1);

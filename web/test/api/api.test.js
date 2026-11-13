@@ -323,13 +323,30 @@ describe('records, stats and audit', () => {
     assert.deepEqual(juan.data.summary, { total: 2, completed: 2, cancelled: 0, noShow: 0, fees: 800 });
     const remarks = await reception.get('/api/records?q=amlodipine');
     assert.equal(remarks.data.records.length, 1);
-    const csv = await reception.get('/api/records/export.csv?patientId=P-0001');
+    const csv = await admin.get('/api/records/export.csv?patientId=P-0001');
     assert.equal(csv.headers.get('content-type'), 'text/csv; charset=utf-8');
     assert.match(csv.headers.get('content-disposition') ?? '', /appointment-records\.csv/);
     const lines = String(csv.data).trim().split('\r\n');
     assert.equal(lines[0], '"Appointment ID","Date","Time","Patient ID","Patient","Staff","Role","Type","Reason","Status","Fee (PHP)","Remarks"');
     assert.equal(lines.length, 3);
     assert.match(lines[1], /^"A-0001",".+","09:00","P-0001","Juan Dela Cruz","Dr\. Maria Santos","Doctor","Consultation",".+","Completed",500\.00,"Acute/);
+  });
+
+  it('hides clinical findings from the front desk (JSON, summary and CSV) and logs exports', async () => {
+    const record = (await reception.get('/api/records?patientId=P-0001')).data.records[0];
+    assert.equal(record.remarks, '');
+    assert.equal(record.findingsHidden, true);
+    const detail = (await reception.get('/api/appointments/A-0001')).data;
+    assert.equal(detail.summary.includes('Acute'), false);
+    assert.match(detail.summary, /\(clinical notes hidden\)$/);
+    const csv = String((await reception.get('/api/records/export.csv?patientId=P-0001')).data);
+    assert.equal(csv.includes('Acute'), false);
+    assert.match(csv, /"\(clinical notes hidden\)"/);
+    const forDoctor = (await doctor.get('/api/records?patientId=P-0001')).data.records[0];
+    assert.match(forDoctor.remarks, /^Acute/);
+    const log = (await admin.get('/api/audit?limit=1000')).data.entries;
+    assert.ok(log.some((e) => e.action === 'records.exported' && e.actor === 'reception'));
+    assert.ok(log.some((e) => e.action === 'auth.login' && e.actor === 'admin'));
   });
 
   it('builds the dashboard and analytics', async () => {
@@ -372,8 +389,9 @@ describe('doctor accounts only see their own work', () => {
 
   it('cannot open or change another staff member\'s appointment', async () => {
     const other = (await admin.get('/api/appointments?staffId=S-0004')).data.appointments[0];
-    assert.equal((await doctor.get(`/api/appointments/${other.id}`)).status, 403);
-    assert.equal((await doctor.post(`/api/appointments/${other.id}/no-show`)).status, 403);
+    assert.equal((await doctor.get(`/api/appointments/${other.id}`)).status, 404, 'not-yours looks the same as missing');
+    assert.equal((await doctor.post(`/api/appointments/${other.id}/no-show`)).status, 404);
+    assert.equal((await doctor.get('/api/records?patientId=P-0002')).status, 404);
   });
 });
 
@@ -388,7 +406,8 @@ describe('queue board', () => {
     assert.equal((await doctor.post(`/api/queue/${juan.appointment.id}/call`)).status, 204);
     const board = (await srv.client().get('/api/queue/board')).data;
     const row = board.rows.find((r) => r.staffId === 'S-0001');
-    assert.deepEqual(row.nowServing, { ticket: juan.appointment.id, initials: 'J.D.' });
+    assert.deepEqual(row.nowServing, { ticket: 'Q-001', initials: 'J.D.' }, 'a per-day queue number, not the appointment ID');
+    assert.equal(JSON.stringify(board).includes(juan.appointment.id), false);
     assert.equal(JSON.stringify(board).includes('Juan'), false);
     assert.equal((await srv.client().post(`/api/queue/${juan.appointment.id}/check-in`)).status, 401);
     assert.equal((await reception.delete(`/api/queue/${juan.appointment.id}`)).status, 204);
@@ -406,6 +425,16 @@ describe('queue board', () => {
 });
 
 describe('server errors', () => {
+  it('ignore a malformed session cookie instead of failing', async () => {
+    const res = await srv.client().request('GET', '/api/health', undefined, { Cookie: 'cc_session=%E0%A4%A' });
+    assert.equal(res.status, 200);
+  });
+
+  it('refuse cross-site fetches flagged by the browser', async () => {
+    const res = await admin.post('/api/patients', newPatient, { 'Sec-Fetch-Site': 'cross-site' });
+    assert.equal(res.status, 403);
+  });
+
   it('never leak internal details', async () => {
     const original = srv.context.service.getPatients;
     srv.context.service.getPatients = () => {
