@@ -135,8 +135,8 @@ classDiagram
     -gender string
     -address string
     -bloodType string
-    +GENDERS$ string[]
-    +BLOOD_TYPES$ string[]
+    +GENDERS string[]$
+    +BLOOD_TYPES string[]$
     +age number
     +getRole() string
     +getDetails() string
@@ -152,7 +152,7 @@ classDiagram
     +getConsultationFee()* number
     +getSlotDurationMinutes()* number
     +getServiceAreaLabel()* string
-    +serviceArea* string
+    +serviceArea string
     +getDisplayName() string
     +setShift(start, end)
     +getTimeSlots() TimeOfDay[]
@@ -165,7 +165,7 @@ classDiagram
   }
   class Doctor {
     -specialization string
-    +SPECIALIZATIONS$ string[]
+    +SPECIALIZATIONS string[]$
     +isGeneralPractitioner() boolean
     +getConsultationFee() number
     +getSlotDurationMinutes() number
@@ -175,7 +175,7 @@ classDiagram
   }
   class Dentist {
     -clinicRoom string
-    +ROOMS$ string[]
+    +ROOMS string[]$
     +getConsultationFee() number
     +getSlotDurationMinutes() number
     +getServiceAreaLabel() string
@@ -184,7 +184,7 @@ classDiagram
   }
   class Nurse {
     -department string
-    +DEPARTMENTS$ string[]
+    +DEPARTMENTS string[]$
     +getConsultationFee() number
     +getSlotDurationMinutes() number
     +getServiceAreaLabel() string
@@ -192,7 +192,7 @@ classDiagram
     +getDisplayName() string
   }
   class StaffFactory {
-    +ROLES$ string[]
+    +ROLES string[]$
     +create(role, props)$ MedicalStaff
     +serviceAreaLabel(role)$ string
     +serviceAreaOptions(role)$ string[]
