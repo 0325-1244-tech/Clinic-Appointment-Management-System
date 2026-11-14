@@ -616,3 +616,4 @@ html { scroll-padding-top: calc(var(--header-h) + 12px); }
 .dash-chart { min-height: 268px; }
 .stat-value, .stat .skeleton { min-height: 1.8rem; }
 .stat .skeleton { height: 1.8rem !important; }
+.bar-row .cell-sub { display: block; font-size: 0.75rem; color: var(--text-3); }

@@ -1,4 +1,5 @@
 // @ts-check
+/* global window, document -- used inside page.evaluate(), which runs in the browser */
 /**
  * Regenerates the documentation images:
  *   docs/screenshots/web/*.png  screenshots of the running app (sample data)
@@ -41,6 +42,7 @@ async function captureScreens() {
   const page = await ctx.newPage();
   const shot = async (/** @type {string} */ name, /** @type {boolean} */ full = false) => {
     await page.waitForTimeout(700);
+    await page.evaluate(() => document.querySelectorAll('.toast').forEach((t) => t.remove()));
     await page.screenshot({ path: path.join(shots, `${name}.png`), fullPage: full });
     console.info(`screenshot ${name}.png`);
   };
@@ -115,7 +117,11 @@ async function captureScreens() {
 
 async function renderDiagrams() {
   const markdown = fs.readFileSync(path.join(docs, 'DOCUMENTATION.md'), 'utf8');
-  const blocks = [...markdown.matchAll(/^### (4\.\d [^\n]+)\n\n```mermaid\n(classDiagram[\s\S]*?)```/gm)];
+  const blocks = [...markdown.matchAll(/^### (4\.\d [^\n]+)\n\n```mermaid\n(classDiagram[\s\S]*?)```/gm)].map((m) => [m[0], m[1], m[2]]);
+  const flowchart = /^## 3\. Architecture\n\n```mermaid\n(flowchart[\s\S]*?)```/m.exec(markdown);
+  if (flowchart) {
+    blocks.unshift(['', '4.0 Architecture', flowchart[1]]);
+  }
   const ctx = await browser.newContext({ viewport: { width: 1800, height: 1200 }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   await page.setContent('<!doctype html><html><body style="margin:0;background:#fff"><div id="out"></div></body></html>');

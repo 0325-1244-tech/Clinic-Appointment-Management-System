@@ -18,7 +18,8 @@
     "typecheck": "tsc -p jsconfig.json",
     "check:diagrams": "node scripts/check-diagrams.js",
     "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run check:diagrams",
-    "docs:images": "node scripts/capture-docs.js"
+    "docs:images": "node scripts/capture-docs.js",
+    "docs:word": "node scripts/build-word.js"
   },
   "dependencies": {
     "express": "5.3.0",
@@ -29,6 +30,7 @@
     "@playwright/test": "1.65.0",
     "@types/express": "5.0.6",
     "@types/node": "24.19.2",
+    "docx": "9.15.4",
     "eslint": "10.14.0",
     "globals": "17.14.0",
     "mermaid": "11.17.2",

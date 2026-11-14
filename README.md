@@ -95,7 +95,9 @@ npm run verify           # lint + type check + coverage + class-diagram check
 
 `npm run check:diagrams` compares the UML class diagrams in [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md)
 with the code and fails if any class, member or `extends` arrow does not exist.
-`npm run docs:images` regenerates the screenshots and diagram images.
+`npm run docs:images` regenerates the screenshots and diagram images, and `npm run docs:word` rebuilds
+`docs/CareConnect-Documentation.docx` from `DOCUMENTATION.md`. On Windows with Microsoft Word,
+`powershell -File scripts/update-word-toc.ps1` then fills in the table of contents.
 
 ## Project structure
 
