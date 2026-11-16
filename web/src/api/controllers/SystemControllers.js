@@ -36,6 +36,8 @@ export class MetaController extends Controller {
           ? DEMO_ACCOUNTS.map((a) => ({ username: a.username, password: a.demoPassword, role: a.role.label, displayName: a.displayName }))
           : [],
         needsSetup: this.context.auth.needsSetup(),
+        setupProblem: this.context.auth.needsSetup() ? this.context.config.setupProblem ?? 'missing' : null,
+        persistentStorage: this.context.config.persistent,
         timeZone: this.context.config.timeZone,
         today: date.toString(),
         now: time.toString(),

@@ -31,8 +31,7 @@ export class LoginPage extends BasePage {
           h('div', { class: 'field' }, h('label', { for: 'login-username' }, 'Username'), this.#username),
           h('div', { class: 'field' }, h('label', { for: 'login-password' }, 'Password'), this.#password),
           this.#submit,
-          this.app.config.needsSetup ? h('div', { class: 'form-alert', role: 'note' },
-            h('span', null, 'No administrator account exists yet. Set ADMIN_PASSWORD (and optionally ADMIN_USERNAME) in the server settings, then restart the service.')) : null,
+          this.app.config.needsSetup ? this.#setupNotice(this.app.config.setupProblem) : null,
           demo.length > 0 ? h('div', { class: 'demo-accounts' },
             h('p', { class: 'small muted' }, 'Demo accounts (sample data only):'),
             demo.map((/** @type {any} */ a) => h('button', {
@@ -43,6 +42,25 @@ export class LoginPage extends BasePage {
               },
             }, h('span', null, h('strong', null, a.role), h('span', { class: 'muted small' }, ` · ${a.displayName}`)),
             h('code', null, `${a.username} / ${a.password}`)))) : null)));
+  }
+
+  /**
+   * Shown until the first administrator exists (official mode).
+   *
+   * @param {string | null} problem
+   */
+  #setupNotice(problem) {
+    const tooShort = problem === 'password-too-short';
+    return h('div', { class: 'setup-notice', role: 'note' },
+      h('strong', null, tooShort ? 'The administrator password is too short' : 'Finish setting up CareConnect'),
+      h('p', null, tooShort
+        ? 'ADMIN_PASSWORD must be at least 10 characters. Change it in the server settings, then redeploy.'
+        : 'No administrator account exists yet. Add these settings to the server, then redeploy:'),
+      tooShort ? null : h('ul', null,
+        h('li', null, h('code', null, 'ADMIN_USERNAME'), ": the administrator's username, e.g. owner"),
+        h('li', null, h('code', null, 'ADMIN_PASSWORD'), ': at least 10 characters'),
+        h('li', null, h('code', null, 'DATABASE_URL'), ': the PostgreSQL (Neon) connection string')),
+      h('p', { class: 'small muted' }, 'On Render: open the service → Environment → add the variables → Save and deploy.'));
   }
 
   afterRender() {

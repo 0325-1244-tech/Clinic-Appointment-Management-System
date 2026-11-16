@@ -124,9 +124,22 @@ describe('official mode without an administrator', () => {
       const config = (await empty.client().get('/api/config')).data;
       assert.equal(config.needsSetup, true);
       assert.deepEqual(config.demoAccounts, []);
+      assert.equal(config.setupProblem, 'missing');
+      assert.equal(config.persistentStorage, true, 'in-memory storage is fine outside production');
       assert.equal((await empty.client().post('/api/auth/login', { username: 'admin', password: 'admin123' })).status, 401);
     } finally {
       await empty.close();
+    }
+  });
+
+  it('stays up and explains a too-short ADMIN_PASSWORD instead of failing the deploy', async () => {
+    const short = await startServer({ demoMode: false, storage: 'memory', admin: { password: 'short' } });
+    try {
+      const config = (await short.client().get('/api/config')).data;
+      assert.equal(config.needsSetup, true);
+      assert.equal(config.setupProblem, 'password-too-short');
+    } finally {
+      await short.close();
     }
   });
 

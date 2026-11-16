@@ -195,6 +195,8 @@ export class App extends EventTarget {
         this.#content.querySelector('h1')?.focus();
       } }, 'Skip to content'),
       this.config.demoMode ? h('div', { class: 'demo-banner', role: 'note' }, 'Demo mode: sample data only. Do not enter real patient information.') : null,
+      !this.config.persistentStorage ? h('div', { class: 'demo-banner', role: 'alert' },
+        'Records are not being saved permanently: they will be lost when the server restarts. Set DATABASE_URL in the server settings.') : null,
       h('div', { class: 'app' }, sidebar, h('div', { class: 'scrim', onclick: () => this.#closeNav() }), h('div', { class: 'main' }, topbar, this.#content)));
     this.#palette = new CommandPalette(this);
     this.#installShortcuts();

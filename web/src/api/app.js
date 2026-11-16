@@ -87,10 +87,21 @@ export async function createContext(config) {
   // Demo accounts are never written to storage; real accounts always are.
   const users = config.demoMode ? new InMemoryRepository('U') : await database.openRepository('users', 'U', new UserMapper());
   const auth = new AuthService({ users: /** @type {any} */ (users), audit });
+  /** @type {'missing' | 'password-too-short' | undefined} */
+  let setupProblem;
   if (config.demoMode) {
     await auth.seedDemoAccounts();
-  } else if (await auth.ensureAdministrator(config.admin ?? {}) === 'missing') {
-    log('No administrator account exists. Set ADMIN_PASSWORD (and optionally ADMIN_USERNAME) and restart to create one.', '');
+  } else {
+    try {
+      if (await auth.ensureAdministrator(config.admin ?? {}) === 'missing') {
+        setupProblem = 'missing';
+        log('No administrator account exists. Set ADMIN_PASSWORD (and optionally ADMIN_USERNAME) and restart to create one.', '');
+      }
+    } catch (error) {
+      // Keep the site up and explain the problem on the sign-in page instead of failing the deploy.
+      setupProblem = 'password-too-short';
+      log('ADMIN_PASSWORD was not accepted.', error instanceof Error ? error.message : error);
+    }
   }
 
   return {
@@ -104,7 +115,14 @@ export async function createContext(config) {
       await database.flush();
       await close();
     },
-    config: { demoMode: config.demoMode, secureCookies: config.secureCookies, timeZone: config.timeZone },
+    config: {
+      demoMode: config.demoMode,
+      secureCookies: config.secureCookies,
+      timeZone: config.timeZone,
+      setupProblem,
+      // On a hosted server (production), only PostgreSQL survives restarts; local files are fine on your own computer.
+      persistent: config.demoMode || config.storage === 'postgres' || !config.secureCookies,
+    },
   };
 }
 
