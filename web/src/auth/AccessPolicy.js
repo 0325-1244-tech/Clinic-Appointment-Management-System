@@ -26,6 +26,7 @@ export const Permission = Object.freeze({
   AUDIT_READ: 'audit:read',
   QUEUE_MANAGE: 'queue:manage',
   FINDINGS_READ: 'findings:read', // clinical findings written when a visit is completed
+  USERS_MANAGE: 'users:manage', // create accounts, reset passwords (administrators only)
 });
 
 /**
@@ -112,7 +113,7 @@ export class AdminPolicy extends AccessPolicy {
 /** Front desk: patients, booking and records. No staff changes, no clinical findings, no audit log. */
 export class ReceptionistPolicy extends AccessPolicy {
   /** @type {Set<string>} */
-  static #DENIED = new Set([Permission.STAFF_WRITE, Permission.APPOINTMENTS_COMPLETE, Permission.AUDIT_READ, Permission.FINDINGS_READ]);
+  static #DENIED = new Set([Permission.STAFF_WRITE, Permission.APPOINTMENTS_COMPLETE, Permission.AUDIT_READ, Permission.FINDINGS_READ, Permission.USERS_MANAGE]);
 
   /** @override @param {string} permission */
   can(permission) {

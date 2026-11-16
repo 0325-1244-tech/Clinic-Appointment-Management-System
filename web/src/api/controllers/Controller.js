@@ -15,6 +15,8 @@ import { abstractClass, abstractMethod } from '../../domain/contracts.js';
  * @property {import('../../services/AuditLog.js').AuditLog} audit
  * @property {import('../../services/QueueService.js').QueueService} queue
  * @property {import('../../auth/AuthService.js').AuthService} auth
+ * @property {import('../app.js').StorageHealth} health
+ * @property {() => Promise<void>} close  saves pending writes and closes the database
  * @property {{ demoMode: boolean, secureCookies: boolean, timeZone: string }} config
  */
 

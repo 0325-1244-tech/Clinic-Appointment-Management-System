@@ -247,6 +247,7 @@ function screenshots() {
     ['medical-staff', 'Medical staff with the polymorphic details line'],
     ['records', 'Appointment records with totals and CSV export'],
     ['audit-log', 'Audit log'],
+    ['accounts', 'Accounts: the administrator manages who can sign in'],
     ['queue-board', 'Waiting-room queue board (ticket numbers and initials only)'],
     ['dashboard-dark', 'Dark theme'],
     ['phone-appointments', 'Phone layout'],

@@ -3,11 +3,13 @@ import { Clock, TimeOfDay, ZoneClock } from '/domain/index.js';
 import { CommandPalette } from './components/CommandPalette.js';
 import { ApiClient } from './core/ApiClient.js';
 import { AppointmentActions } from './core/AppointmentActions.js';
-import { h, icon, initialsOf } from './core/dom.js';
+import { h, icon, initialsOf, replace } from './core/dom.js';
 import { Router } from './core/Router.js';
 import { Theme } from './core/Theme.js';
 import { Toaster } from './core/Toaster.js';
 import { AppointmentsPage } from './pages/AppointmentsPage.js';
+import { ChangePasswordDialog } from './components/dialogs/AccountDialogs.js';
+import { AccountsPage } from './pages/AccountsPage.js';
 import { AuditPage } from './pages/AuditPage.js';
 import { CalendarPage } from './pages/CalendarPage.js';
 import { DashboardPage } from './pages/DashboardPage.js';
@@ -39,6 +41,7 @@ const NAV = /** @type {const} */ ([
   ['/staff', 'Medical Staff', 'staff', 'staff:read'],
   ['/records', 'Records', 'records', 'records:read'],
   ['/audit', 'Audit Log', 'audit', 'audit:read'],
+  ['/accounts', 'Accounts', 'key', 'users:manage'],
 ]);
 
 /**
@@ -184,8 +187,9 @@ export class App extends EventTarget {
       h('div', { class: 'user-chip' },
         h('span', { class: 'avatar', 'aria-hidden': 'true' }, initialsOf(user.displayName)),
         h('span', { class: 'user-meta' }, h('strong', null, user.displayName), h('span', null, user.roleLabel))),
+      h('button', { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': 'Change password', title: 'Change password', onclick: () => this.#changePassword() }, icon('key')),
       h('button', { class: 'btn btn-ghost btn-icon', type: 'button', 'aria-label': 'Sign out', title: 'Sign out', onclick: () => this.signOut() }, icon('logout')));
-    this.#root.replaceChildren(
+    replace(this.#root,
       h('a', { class: 'skip-link', href: '#main', onclick: (/** @type {Event} */ e) => {
         e.preventDefault();
         this.#content.querySelector('h1')?.focus();
@@ -228,8 +232,15 @@ export class App extends EventTarget {
       .add({ pattern: '/patients/:id', create: (p) => new PatientProfilePage(this, p.id) })
       .add({ pattern: '/staff', create: () => new StaffPage(this) })
       .add({ pattern: '/records', create: () => new RecordsPage(this) })
-      .add({ pattern: '/audit', create: () => new AuditPage(this) });
+      .add({ pattern: '/audit', create: () => new AuditPage(this) })
+      .add({ pattern: '/accounts', create: () => new AccountsPage(this) });
     return this;
+  }
+
+  async #changePassword() {
+    if (await new ChangePasswordDialog(this).open()) {
+      this.toaster.success('Password changed', 'Other devices have been signed out.');
+    }
   }
 
   openPalette() {

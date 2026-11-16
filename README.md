@@ -20,7 +20,8 @@ in [`src/`](src/) (see [Java desktop version](#java-desktop-version) below).
 - **Calendar:** week view per staff member and day view for the clinic; drag an appointment to reschedule
 - **Automatic fees:** staff type (Doctor / Dentist / Nurse) × appointment type (Consultation, Follow-up, Check-up, Emergency)
 - **Appointment records:** visit history per patient, totals, CSV export
-- **Accounts and roles:** Admin, Receptionist and Doctor (a doctor sees only their own schedule and patients)
+- **Accounts and roles:** Admin, Receptionist and Doctor (a doctor sees only their own schedule and patients); the administrator creates, edits, deactivates and resets accounts, and everyone can change their own password
+- **Permanent storage:** PostgreSQL (for example a free Neon database), JSON files or SQLite
 - **Queue board:** a "now serving" screen for the waiting area that updates live
 - **Audit log, Ctrl+K search, dark mode, keyboard shortcuts, phone-friendly layout**
 
@@ -38,47 +39,75 @@ in [`src/`](src/) (see [Java desktop version](#java-desktop-version) below).
 
 **Requirement:** [Node.js](https://nodejs.org/) 24 or newer.
 
+**Demo (for presentations):** sample data and three demo accounts shown on the sign-in page.
+
 ```bash
 cd web
 npm install
-npm start
+npm run demo
 ```
 
-Open <http://localhost:3000> and sign in with one of the demo accounts shown on the sign-in page:
+Open <http://localhost:3000> and pick a demo account (`admin` / `admin123`, `reception` / `reception123`,
+`drsantos` / `doctor123`). Demo data is kept separately in `web/data/demo/`.
 
-| Role | Username | Password | Can do |
-|---|---|---|---|
-| Admin | `admin` | `admin123` | Everything, including staff changes and the audit log |
-| Receptionist | `reception` | `reception123` | Patients, booking, records (clinical findings hidden) |
-| Doctor | `drsantos` | `doctor123` | Dr. Maria Santos's own schedule and patients; record findings |
+**Official (real use):** the clinic starts empty, there are no demo accounts, and the first administrator
+comes from your settings. Every other account is created inside the app under **Accounts**.
 
-The sample data (8 patients, 6 staff, about 16 appointments around today's date) loads automatically the
-first time. Data is saved in `web/data/`; delete that folder to start over with fresh sample data.
-The queue board is at <http://localhost:3000/board>.
+```bash
+cd web
+ADMIN_USERNAME=owner ADMIN_PASSWORD='choose-a-long-password' npm start
+```
 
-## Run it online (Render)
+(On Windows PowerShell: `$env:ADMIN_USERNAME='owner'; $env:ADMIN_PASSWORD='choose-a-long-password'; npm start`.)
+Without `DATABASE_URL`, records are saved in `web/data/`.
 
-1. Sign in at <https://render.com> with your GitHub account.
-2. Click **New + → Blueprint**, connect this repository and choose the **`javascript-version`** branch. Render reads [`render.yaml`](render.yaml).
-3. Click **Apply**. Render runs `npm ci` and `npm start` in `web/` and checks `/api/health`.
-4. Open the service URL, for example `https://careconnect-web.onrender.com`.
+| Role | Can do |
+|---|---|
+| Admin | Everything, including staff changes, accounts and the audit log |
+| Receptionist | Patients, booking, records (clinical findings hidden) |
+| Doctor | Their own schedule and patients (the account is linked to a staff record); record findings |
 
-Notes for the free plan:
-- The service sleeps after about 15 minutes without visitors, so the first visit afterwards takes about a minute.
-- The disk is temporary: data returns to the sample data after every deploy or restart.
-- Demo mode is on, so the demo accounts are listed on the sign-in page. Use made-up data only. To hide them,
-  set `DEMO_MODE` to `false` and add `ADMIN_PASSWORD`, `RECEPTION_PASSWORD` and `DOCTOR_PASSWORD`
-  (10+ characters each) under **Environment** in the Render dashboard.
+The queue board for the waiting area is at `/board`.
+
+## Put it online (Render + Neon, free)
+
+Render's free disk is wiped whenever the service sleeps or redeploys, so the official site keeps its data in a
+free **Neon** PostgreSQL database instead.
+
+1. **Create the database.** Sign up at <https://neon.tech> (free, no card), create a project, choose the region
+   **AWS US West 2 (Oregon)** (the same region as Render's default), and copy the **connection string**
+   (it starts with `postgresql://` and ends with `?sslmode=require`).
+2. **Create the service.** In Render click **New + → Blueprint**, connect this repository and choose the
+   **`javascript-version`** branch. Render reads [`render.yaml`](render.yaml) and asks for three values:
+   - `DATABASE_URL`: the Neon connection string
+   - `ADMIN_USERNAME`: the administrator's username, for example `owner`
+   - `ADMIN_PASSWORD`: a private password of at least 10 characters
+3. Click **Apply**. When the service shows **Live**, open its URL and sign in as the administrator.
+4. Go to **Medical Staff** to add the clinic's doctors, dentists and nurses, then **Accounts** to create the
+   receptionists' and doctors' sign-ins. Each person can change their own password with the key icon.
+
+Already created the service earlier? Open it in Render → **Environment**, add the three values above
+(and remove `DEMO_MODE` if it is there), then **Save and deploy**.
+
+Notes:
+- The free service sleeps after about 15 minutes without visitors; the first visit afterwards takes about a minute.
+  Records are safe in Neon while it sleeps.
+- Changing `ADMIN_PASSWORD` later does not change an existing administrator's password: use the key icon in the app.
+- If you store real patient information, follow the Data Privacy Act of 2012 (RA 10173): give accounts only to
+  clinic staff, deactivate accounts of people who leave, and keep the Neon and Render logins private.
 
 ## Settings
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `PORT` | `3000` | Port to listen on (Render sets this) |
-| `STORAGE` | `json` | `json` (files in `DATA_DIR`), `sqlite` (Node's built-in SQLite) or `memory` |
-| `DATA_DIR` | `web/data` | Where data files are saved |
-| `DEMO_MODE` | `true` | Show the demo accounts and the "sample data only" banner |
-| `ADMIN_PASSWORD`, `RECEPTION_PASSWORD`, `DOCTOR_PASSWORD` | – | Account passwords when `DEMO_MODE=false` |
+| `DATABASE_URL` | – | PostgreSQL connection string. When set, every record and account is stored there. |
+| `STORAGE` | `postgres` if `DATABASE_URL` is set, else `json` | `postgres`, `json` (files in `DATA_DIR`), `sqlite` or `memory` |
+| `DATA_DIR` | `web/data` (demo: `web/data/demo`) | Where json/sqlite data is saved |
+| `ADMIN_USERNAME` | `admin` | First administrator's username (official mode) |
+| `ADMIN_PASSWORD` | – | First administrator's password, 10+ characters. Used once, when no administrator exists. |
+| `SAMPLE_DATA` | `false` | `true` loads the sample records into an empty clinic in official mode |
+| `DEMO_MODE` | `false` | `true` (or `npm run demo`) turns on demo accounts, sample data and the demo banner |
 | `CLINIC_TIME_ZONE` | `Asia/Manila` | The clinic's clock (servers often run on UTC) |
 | `NODE_ENV` | – | `production` turns on secure cookies, HSTS and proxy support |
 
@@ -86,7 +115,7 @@ Notes for the free plan:
 
 ```bash
 cd web
-npm test                 # 177 unit and API tests (node:test)
+npm test                 # unit and API tests (node:test), including PostgreSQL via pg-mem
 npm run test:coverage    # fails below 90% line coverage on domain, services, repositories
 npx playwright install chromium   # once, for the end-to-end tests
 npm run test:e2e         # Playwright: register → book → double booking blocked → complete → records → CSV, and more
@@ -116,9 +145,9 @@ web/
 │   │   ├── StaffFactory.js    creates the right MedicalStaff subclass
 │   │   ├── mappers.js         turn objects into JSON records and back
 │   │   └── time/              CalendarDate, TimeOfDay, DayOfWeek, Clock (Asia/Manila)
-│   ├── repositories/          Repository (abstract) → InMemory → JsonFile / Sqlite
+│   ├── repositories/          Repository (abstract) → InMemory → JsonFile / Sqlite / Postgres
 │   ├── services/              ClinicService (business rules), Stats, AuditLog, Queue, SampleDataLoader
-│   ├── auth/                  AuthService, scrypt PasswordHasher, sessions, AccessPolicy per role
+│   ├── auth/                  User accounts, AuthService, scrypt PasswordHasher, sessions, AccessPolicy per role
 │   └── api/                   Express app and one Controller subclass per resource
 ├── public/
 │   ├── index.html, board.html, styles/

@@ -1,5 +1,9 @@
-# Render Blueprint: deploys the JavaScript version of CareConnect as a Node web service.
+# Render Blueprint: deploys CareConnect (JavaScript version) as a Node web service.
 # In Render: New + -> Blueprint -> pick this repository and the `javascript-version` branch.
+#
+# Official mode: the clinic starts empty, there are no demo accounts, and every
+# record is stored permanently in PostgreSQL (for example a free Neon database).
+# Render asks for the three secret values below when the Blueprint is created.
 services:
   - type: web
     name: careconnect-web
@@ -15,14 +19,15 @@ services:
         value: "24"
       - key: NODE_ENV
         value: production
-      # The clinic's clock. The app also defaults to Asia/Manila on its own.
       - key: CLINIC_TIME_ZONE
         value: Asia/Manila
-      # Shows the demo accounts on the sign-in page. To hide them, set this to "false" and add
-      # ADMIN_PASSWORD, RECEPTION_PASSWORD and DOCTOR_PASSWORD (10+ characters) in the dashboard.
-      - key: DEMO_MODE
-        value: "true"
-      # json (default) or sqlite. Note: the free plan's disk is temporary, so data
-      # returns to the sample data after every deploy or restart.
-      - key: STORAGE
-        value: json
+      # PostgreSQL connection string, e.g. from neon.tech:
+      # postgresql://user:password@ep-xxxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+      # The first administrator. Created once, the first time the service starts
+      # with an empty database. Use a password of 10+ characters and keep it private.
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

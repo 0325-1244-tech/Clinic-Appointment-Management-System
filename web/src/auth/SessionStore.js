@@ -66,6 +66,20 @@ export class SessionStore {
     }
   }
 
+  /**
+   * Ends every session of one user (after a password reset or deactivation).
+   *
+   * @param {string} userId
+   * @param {string} [keepToken] a session to keep, e.g. the one changing its own password
+   */
+  destroyForUser(userId, keepToken) {
+    for (const [token, session] of this.#sessions) {
+      if (session.userId === userId && token !== keepToken) {
+        this.#sessions.delete(token);
+      }
+    }
+  }
+
   get size() {
     return this.#sessions.size;
   }

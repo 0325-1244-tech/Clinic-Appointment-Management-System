@@ -19,21 +19,25 @@
     "check:diagrams": "node scripts/check-diagrams.js",
     "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run check:diagrams",
     "docs:images": "node scripts/capture-docs.js",
-    "docs:word": "node scripts/build-word.js"
+    "docs:word": "node scripts/build-word.js",
+    "demo": "node server.js --demo"
   },
   "dependencies": {
     "express": "5.3.0",
-    "helmet": "8.3.0"
+    "helmet": "8.3.0",
+    "pg": "8.23.1"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.65.0",
     "@types/express": "5.0.6",
     "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
     "docx": "9.15.4",
     "eslint": "10.14.0",
     "globals": "17.14.0",
     "mermaid": "11.17.2",
+    "pg-mem": "3.0.14",
     "typescript": "5.9.3"
   }
 }

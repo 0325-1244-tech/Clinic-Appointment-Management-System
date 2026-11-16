@@ -6,10 +6,10 @@ import { FixedClock } from '../../src/domain/index.js';
  * Starts the real Express app on a random port with in-memory storage, the
  * sample data and a frozen clock (Wednesday 2026-11-11, 08:00).
  */
-export async function startServer({ date = '2026-11-11', time = '08:00', demoMode = true, env = {} } = {}) {
+export async function startServer({ date = '2026-11-11', time = '08:00', demoMode = true, storage = 'memory', sqlClient, admin, sampleData = false } = /** @type {any} */ ({})) {
   const clock = new FixedClock(date, time);
   const context = await createContext({
-    storage: 'memory', dataDir: '', demoMode, secureCookies: false, trustProxy: false, timeZone: 'Asia/Manila', clock, env,
+    storage, sqlClient, admin, sampleData, dataDir: '', demoMode, secureCookies: false, trustProxy: false, timeZone: 'Asia/Manila', clock,
   });
   /** @type {unknown[]} */
   const errors = [];

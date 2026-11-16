@@ -244,6 +244,32 @@ export class ApiClient extends EventTarget {
     return this.request('DELETE', `/api/queue/${encodeURIComponent(appointmentId)}`);
   }
 
+  // ---- Accounts (administrators) and own password ----
+  /** @returns {Promise<any[]>} */
+  async users() {
+    return (await this.get('/api/users')).users;
+  }
+
+  /** @param {object} input */
+  async createUser(input) {
+    return (await this.post('/api/users', input)).user;
+  }
+
+  /** @param {string} id @param {object} input */
+  async updateUser(id, input) {
+    return (await this.request('PUT', `/api/users/${encodeURIComponent(id)}`, input)).user;
+  }
+
+  /** @param {string} id @param {string} password */
+  resetPassword(id, password) {
+    return this.post(`/api/users/${encodeURIComponent(id)}/password`, { password });
+  }
+
+  /** @param {string} currentPassword @param {string} newPassword */
+  changePassword(currentPassword, newPassword) {
+    return this.post('/api/auth/password', { currentPassword, newPassword });
+  }
+
   /** @param {any} record @returns {Appointment} */
   static toAppointment(record) {
     return appointmentMapper.fromRecord(record);

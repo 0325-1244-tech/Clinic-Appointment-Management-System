@@ -93,9 +93,9 @@ flowchart LR
 | Layer | Folder | What it holds |
 |---|---|---|
 | Domain | `web/src/domain/` | Plain ES classes with no framework imports. **The browser loads the very same files** (served at `/domain/`) to validate forms and to turn API data back into real `Doctor`, `Patient` and `Appointment` objects. |
-| Repositories | `web/src/repositories/` | `Repository` (abstract) → `InMemoryRepository` → `JsonFileRepository` / `SqliteRepository`. |
+| Repositories | `web/src/repositories/` | `Repository` (abstract) → `InMemoryRepository` → `JsonFileRepository` / `SqliteRepository` / `PostgresRepository`. Online, everything is stored in PostgreSQL (a free Neon database). |
 | Services | `web/src/services/` | `ClinicService` (every business rule), `StatsService`, `AuditLog`, `QueueService`, `SampleDataLoader`. |
-| Sign-in and roles | `web/src/auth/` | `AuthService`, `PasswordHasher` (scrypt), `SessionStore`, `AccessPolicy` and its role subclasses. |
+| Sign-in and roles | `web/src/auth/` | `User` accounts (stored with the clinic records), `AuthService`, `PasswordHasher` (scrypt), `SessionStore`, `AccessPolicy` and its role subclasses. |
 | REST API | `web/src/api/` | Express app, one `Controller` subclass per resource, request validation and error handling. |
 | Browser app | `web/public/app/` | `App`, pages, Web Components (`<cc-data-table>`, `<cc-stat-card>`), dialogs, charts, calendar, command palette. |
 
@@ -389,6 +389,16 @@ classDiagram
     +update(item)
     +remove(id) boolean
   }
+  class PostgresRepository~T~ {
+    -client SqlClient
+    -table string
+    -pending Promise
+    +open(options)$ PostgresRepository
+    +add(item)
+    +update(item)
+    +remove(id) boolean
+    +flush() Promise
+  }
   class RecordMapper~T,R~ {
     <<abstract>>
     +toRecord(entity)* R
@@ -404,7 +414,10 @@ classDiagram
     +inMemory()$ ClinicDatabase
     +jsonFiles(dir)$ ClinicDatabase
     +sqlite(db)$ ClinicDatabase
+    +postgres(client)$ ClinicDatabase
+    +openRepository(name, prefix, mapper) Repository
     +isEmpty() boolean
+    +flush()
   }
   class ClinicService {
     -db ClinicDatabase
@@ -451,6 +464,7 @@ classDiagram
   Repository <|-- InMemoryRepository
   InMemoryRepository <|-- JsonFileRepository
   InMemoryRepository <|-- SqliteRepository
+  InMemoryRepository <|-- PostgresRepository
   RecordMapper <|-- PatientMapper
   RecordMapper <|-- StaffMapper
   RecordMapper <|-- AppointmentMapper
@@ -468,18 +482,34 @@ classDiagram
 classDiagram
   class User {
     -passwordHash string
-    +username string
-    +role UserRole
-    +staffId string
+    -username string
+    -displayName string
+    -role UserRole
+    -staffId string
+    -active boolean
+    +setRole(role, staffId)
     +verifyPassword(password, hasher) Promise
+    +setPasswordHash(hash)
     +toPublic() object
+    +toRecord() UserRecord
+  }
+  class UserMapper {
+    +toRecord(user) UserRecord
+    +fromRecord(record) User
   }
   class UserRole
   class AuthService {
-    +seedAccounts(options)
+    +seedDemoAccounts()
+    +ensureAdministrator(settings)
+    +needsSetup() boolean
     +login(username, password, address)
     +logout(token)
     +userForToken(token) User
+    +listUsers() User[]
+    +createUser(input) User
+    +updateUser(actor, id, input) User
+    +resetPassword(id, password)
+    +changeOwnPassword(user, current, next, keepToken)
   }
   class PasswordHasher {
     +hash(password) Promise
@@ -489,6 +519,7 @@ classDiagram
     +create(userId) string
     +touch(token)
     +destroy(token)
+    +destroyForUser(userId, keepToken)
   }
   class RateLimiter {
     +retryAfter(key) number
@@ -532,6 +563,7 @@ classDiagram
   class AuditController
   class QueueController
   class MetaController
+  class UserController
   Enumeration <|-- UserRole
   AccessPolicy <|-- AdminPolicy
   AccessPolicy <|-- ReceptionistPolicy
@@ -545,6 +577,8 @@ classDiagram
   Controller <|-- AuditController
   Controller <|-- QueueController
   Controller <|-- MetaController
+  Controller <|-- UserController
+  RecordMapper <|-- UserMapper
   AuthService --> PasswordHasher
   AuthService --> SessionStore
   AuthService --> RateLimiter
@@ -589,6 +623,7 @@ classDiagram
   class PatientProfilePage
   class QueuePage
   class LoginPage
+  class AccountsPage
   class DataTable {
     <<WebComponent>>
     +columns
@@ -622,6 +657,9 @@ classDiagram
   class StaffDialog
   class AppointmentDialog
   class AppointmentDetailsDialog
+  class AccountDialog
+  class ResetPasswordDialog
+  class ChangePasswordDialog
   class Chart {
     <<abstract>>
     +draw()* Element
@@ -649,6 +687,7 @@ classDiagram
   ListPage <|-- AppointmentsPage
   ListPage <|-- RecordsPage
   ListPage <|-- AuditPage
+  ListPage <|-- AccountsPage
   HTMLElement <|-- DataTable
   HTMLElement <|-- StatCard
   BaseDialog <|-- ConfirmDialog
@@ -658,6 +697,9 @@ classDiagram
   FormDialog <|-- PatientDialog
   FormDialog <|-- StaffDialog
   FormDialog <|-- AppointmentDialog
+  FormDialog <|-- AccountDialog
+  FormDialog <|-- ResetPasswordDialog
+  FormDialog <|-- ChangePasswordDialog
   Chart <|-- DailyVolumeChart
   Chart <|-- StatusDonutChart
   Chart <|-- BarListChart
@@ -715,7 +757,8 @@ same validation messages appear before anything is sent. The server checks every
 | Calendar | Week view per staff member and day view for the whole clinic; click an open slot to book; drag an appointment to reschedule (the details window offers the same action for keyboard users) |
 | Records | Closed appointments, per-patient filter, totals, CSV export with the same columns as the Java version |
 | Queue | Check patients in and call them; a public board at `/board` updates live with Server-Sent Events and shows only per-day ticket numbers and initials |
-| Accounts | Admin (everything), Receptionist (front desk: no staff changes, no clinical findings, no audit log), Doctor (own schedule and patients only) |
+| Accounts | Admin (everything), Receptionist (front desk: no staff changes, no clinical findings, no audit log), Doctor (own schedule and patients only). The first administrator comes from the server settings; the administrator then creates, edits, deactivates and resets the other accounts on the **Accounts** page, and everyone can change their own password |
+| Storage | PostgreSQL online (a free Neon database), or JSON files / SQLite on one computer. The clinic starts empty; demo mode (`npm run demo`) adds the sample data and demo accounts for presentations |
 | Audit log | Who changed what and when, plus sign-ins and CSV exports (admins only) |
 | Quality of life | Ctrl+K search and commands, Alt+N to book, toasts read out by screen readers, light and dark themes, empty states, loading skeletons, layouts down to phone width |
 
@@ -760,8 +803,13 @@ same validation messages appear before anything is sent. The server checks every
 - Write requests must be same-origin JSON. Request bodies are checked against schemas and limited to 20 KB.
 - CSV cells that start with `=`, `+`, `-` or `@` are prefixed so spreadsheets do not run them as formulas.
 - The public queue board shows only a per-day ticket number and the patient's initials.
-- **Demo mode** (the default) lists the demo accounts on the sign-in page and shows a "sample data only"
-  banner. Only made-up sample data should be used in demo mode.
+- **Official mode** (the default) has no built-in accounts: the first administrator's password is a server secret,
+  every other account is created by an administrator, passwords must be at least 10 characters, and
+  deactivating an account or resetting its password signs it out everywhere. The clinic must always keep one
+  active administrator, and nobody can deactivate their own account.
+- **Demo mode** (`npm run demo`) is only for presentations: it lists the demo accounts on the sign-in page,
+  loads made-up sample data and shows a "sample data only" banner. Demo accounts are never saved.
+- Records containing real patients should be handled under the Data Privacy Act of 2012 (RA 10173).
 
 ---
 
@@ -769,8 +817,8 @@ same validation messages appear before anything is sent. The server checks every
 
 | Suite | Command | What it covers |
 |---|---|---|
-| Unit tests (`node:test`) | `npm test` | Every domain rule and service rule, repositories (memory, JSON, SQLite), audit log, queue, sign-in and roles |
-| API tests | `npm test` | Every endpoint over real HTTP: status codes, error format, permissions, CSV, Server-Sent Events, security headers |
+| Unit tests (`node:test`) | `npm test` | Every domain rule and service rule, repositories (memory, JSON, SQLite, PostgreSQL through the in-memory `pg-mem`), audit log, queue, sign-in, roles and account management |
+| API tests | `npm test` | Every endpoint over real HTTP: status codes, error format, permissions, CSV, Server-Sent Events, security headers; official mode with PostgreSQL, including a restart that keeps every record and account |
 | Coverage | `npm run test:coverage` | Fails below 90% lines / 85% branches on `src/domain`, `src/services`, `src/repositories` |
 | End-to-end (Playwright) | `npm run test:e2e` | Register a patient → book → double booking blocked → complete → records → CSV; doctor scoping; undo; Ctrl+K; queue board; phone layout |
 | Lint and types | `npm run lint`, `npm run typecheck` | ESLint, and TypeScript checking of the JSDoc types (`// @ts-check`) |

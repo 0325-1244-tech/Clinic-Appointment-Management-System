@@ -78,6 +78,7 @@ export class CommandPalette {
       { group: 'Pages', label: 'Appointment records', icon: 'records', run: go('/records') },
     ];
     if (app.can('audit:read')) list.push({ group: 'Pages', label: 'Audit log', icon: 'audit', run: go('/audit') });
+    if (app.can('users:manage')) list.push({ group: 'Pages', label: 'Accounts', icon: 'key', run: go('/accounts') });
     if (app.can('appointments:book')) list.push({ group: 'Actions', label: 'Book appointment', sub: 'N', icon: 'plus', run: () => app.actions.book().then((c) => c && app.refreshPage()) });
     list.push({ group: 'Actions', label: 'Toggle dark mode', icon: 'moon', run: () => app.theme.toggle() });
     list.push({ group: 'Actions', label: 'Sign out', icon: 'logout', run: () => app.signOut() });

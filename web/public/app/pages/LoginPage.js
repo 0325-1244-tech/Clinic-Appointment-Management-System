@@ -31,6 +31,8 @@ export class LoginPage extends BasePage {
           h('div', { class: 'field' }, h('label', { for: 'login-username' }, 'Username'), this.#username),
           h('div', { class: 'field' }, h('label', { for: 'login-password' }, 'Password'), this.#password),
           this.#submit,
+          this.app.config.needsSetup ? h('div', { class: 'form-alert', role: 'note' },
+            h('span', null, 'No administrator account exists yet. Set ADMIN_PASSWORD (and optionally ADMIN_USERNAME) in the server settings, then restart the service.')) : null,
           demo.length > 0 ? h('div', { class: 'demo-accounts' },
             h('p', { class: 'small muted' }, 'Demo accounts (sample data only):'),
             demo.map((/** @type {any} */ a) => h('button', {

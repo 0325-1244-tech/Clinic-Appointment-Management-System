@@ -98,4 +98,12 @@ export const Schemas = Object.freeze({
   complete: new RequestSchema({ findings: required(4000) }),
   cancel: new RequestSchema({ reason: required(500) }),
   empty: new RequestSchema({}),
+  newUser: new RequestSchema({
+    username: required(30), displayName: required(80), role: required(20), staffId: text(20), password: required(200),
+  }),
+  editUser: new RequestSchema({
+    displayName: required(80), role: required(20), staffId: text(20), active: { type: 'boolean', required: true },
+  }),
+  resetPassword: new RequestSchema({ password: required(200) }),
+  changePassword: new RequestSchema({ currentPassword: required(200), newPassword: required(200) }),
 });

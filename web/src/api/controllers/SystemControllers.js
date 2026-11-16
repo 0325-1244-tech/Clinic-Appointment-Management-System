@@ -1,5 +1,7 @@
 // @ts-check
-import { DEFAULT_ACCOUNTS } from '../../auth/AuthService.js';
+import { DEMO_ACCOUNTS } from '../../auth/AuthService.js';
+import { UserRole } from '../../auth/User.js';
+import { ValidationError } from '../../domain/errors.js';
 import { Permission } from '../../auth/AccessPolicy.js';
 import { AppointmentStatus } from '../../domain/AppointmentStatus.js';
 import { AppointmentType } from '../../domain/AppointmentType.js';
@@ -19,6 +21,11 @@ export class MetaController extends Controller {
   /** @param {import('express').Router} r */
   routes(r) {
     r.get('/health', (_req, res) => {
+      // 503 after a failed database write makes Render restart the service, which reloads from the database.
+      if (!this.context.health.ok) {
+        res.status(503).json({ status: 'degraded' });
+        return;
+      }
       res.json({ status: 'ok' });
     });
     r.get('/config', (_req, res) => {
@@ -26,8 +33,9 @@ export class MetaController extends Controller {
       res.json({
         demoMode: this.context.config.demoMode,
         demoAccounts: this.context.config.demoMode
-          ? DEFAULT_ACCOUNTS.map((a) => ({ username: a.username, password: a.demoPassword, role: a.role.label, displayName: a.displayName }))
+          ? DEMO_ACCOUNTS.map((a) => ({ username: a.username, password: a.demoPassword, role: a.role.label, displayName: a.displayName }))
           : [],
+        needsSetup: this.context.auth.needsSetup(),
         timeZone: this.context.config.timeZone,
         today: date.toString(),
         now: time.toString(),
@@ -72,6 +80,12 @@ export class AuthController extends Controller {
       }
       this.context.auth.logout(readCookie(req, SESSION_COOKIE));
       res.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, sameSite: 'strict', secure: this.context.config.secureCookies });
+      res.status(204).end();
+    });
+    r.post('/password', requireAuth, async (req, res) => {
+      const user = /** @type {import('../../auth/User.js').User} */ (/** @type {import('../middleware.js').AppRequest} */ (req).user);
+      const { currentPassword, newPassword } = Schemas.changePassword.parse(req.body);
+      await this.context.auth.changeOwnPassword(user, currentPassword, newPassword, readCookie(req, SESSION_COOKIE));
       res.status(204).end();
     });
     // Returns { user: null } when signed out, so the app can check without logging an error.
@@ -223,5 +237,53 @@ export class QueueController extends Controller {
     } catch {
       this.#clients.delete(res);
     }
+  }
+}
+
+/** /api/users: accounts (administrators only). Passwords are never returned. */
+export class UserController extends Controller {
+  get basePath() {
+    return '/api/users';
+  }
+
+  /** @param {import('express').Router} r */
+  routes(r) {
+    r.use(can(Permission.USERS_MANAGE));
+    r.get('/', (_req, res) => {
+      res.json({ users: this.context.auth.listUsers().map((u) => this.#view(u)) });
+    });
+    r.post('/', async (req, res) => {
+      const input = Schemas.newUser.parse(req.body);
+      this.#checkStaffLink(input.role, input.staffId);
+      const user = await this.context.auth.createUser(/** @type {any} */ (input));
+      res.status(201).location(`${this.basePath}/${user.id}`).json({ user: this.#view(user) });
+    });
+    r.put('/:id', (req, res) => {
+      const input = Schemas.editUser.parse(req.body);
+      this.#checkStaffLink(input.role, input.staffId);
+      const actor = /** @type {import('../../auth/User.js').User} */ (/** @type {import('../middleware.js').AppRequest} */ (req).user);
+      const user = this.context.auth.updateUser(actor, String(req.params.id), /** @type {any} */ (input));
+      res.json({ user: this.#view(user) });
+    });
+    r.post('/:id/password', async (req, res) => {
+      await this.context.auth.resetPassword(String(req.params.id), Schemas.resetPassword.parse(req.body).password);
+      res.status(204).end();
+    });
+  }
+
+  /** A Doctor account must point at an existing staff member. @param {string} role @param {string} [staffId] */
+  #checkStaffLink(role, staffId) {
+    if (UserRole.from(role) === UserRole.DOCTOR) {
+      if (!staffId) {
+        throw new ValidationError('Choose the staff record this doctor account belongs to.', { field: 'staffId' });
+      }
+      this.service.getStaffMember(staffId);
+    }
+  }
+
+  /** @param {import('../../auth/User.js').User} user */
+  #view(user) {
+    const staff = user.staffId ? this.service.getStaff().find((s) => s.id === user.staffId) : undefined;
+    return { ...user.toPublic(), staffName: staff?.getDisplayName() ?? null };
   }
 }

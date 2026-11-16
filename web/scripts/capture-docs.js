@@ -57,7 +57,7 @@ async function captureScreens() {
   await shot('dashboard-full', true);
 
   for (const [route, name] of [['/appointments?period=upcoming', 'appointments'], ['/patients', 'patients'], ['/staff', 'medical-staff'],
-    ['/records', 'records'], ['/calendar', 'calendar'], ['/patients/P-0001', 'patient-profile'], ['/audit', 'audit-log']]) {
+    ['/records', 'records'], ['/calendar', 'calendar'], ['/patients/P-0001', 'patient-profile'], ['/audit', 'audit-log'], ['/accounts', 'accounts']]) {
     await page.goto(`${base}/#${route}`);
     await shot(name);
   }
