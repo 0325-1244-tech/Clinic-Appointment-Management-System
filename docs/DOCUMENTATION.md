@@ -5,9 +5,14 @@ Laguna State Polytechnic University
 
 | Group Members | Role / Contribution |
 |---|---|
-| _Member 1 Name_ | _e.g. Domain classes (Person, Patient, MedicalStaff, Doctor, Dentist, Nurse, Appointment)_ |
-| _Member 2 Name_ | _e.g. ClinicService, repositories, REST API, tests_ |
-| _Member 3 Name_ | _e.g. Browser pages, dialogs, class diagrams and documentation_ |
+| Lovelyn Genovania | Project overview and objectives; patient registration (`Person`, `Patient`) and its validation; documentation |
+| Jun Dave Ofrin | Medical personnel classes (`MedicalStaff`, `Doctor`, `Dentist`, `Nurse`, `StaffFactory`); UML class diagrams |
+| Yyah Jannah Pacia | Appointment scheduling and records (`Appointment`, `ClinicService`, repositories); fee computation; automated tests |
+| Andrei Joseph Palis | Web interface (pages, dialogs, calendar, queue board); sign-in and roles; deployment on Render and Neon; system demo |
+
+> With the instructor's permission, this group has four members.
+>
+> **Live system:** https://careconnect-web-qwno.onrender.com (the free server sleeps when idle; the first visit can take about a minute).
 
 > This branch (`javascript-version`) contains the web version in the `web/` folder. The original Java Swing
 > version is unchanged in `src/` (and on the `main` branch).
@@ -84,7 +89,7 @@ flowchart LR
     Service --> Repos["Repository subclasses"]
     Service -- "change events" --> Audit[AuditLog]
     Service -- "change events" --> Queue[QueueService]
-    Repos --> Files[("JSON files / SQLite")]
+    Repos --> Files[("PostgreSQL / JSON files / SQLite")]
   end
   Api -- "REST / JSON" --> Controllers
   Board["Queue board"] -- "Server-Sent Events" --> Controllers
@@ -731,7 +736,7 @@ inside `web/`.
 |---|---|---|---|
 | **Encapsulation** | `private` fields with validating setters; no `setStatus()` | `#private` fields; `get`/`set` accessors that validate; read-only `id`; no status setter, so the status changes only through `complete()`, `cancel()`, `markNoShow()`, `reschedule()`; frozen value objects | `src/domain/Person.js:30` (`#id`, getter only at `:54`), `src/domain/Person.js:78` (validating `set contactNumber`), `src/domain/Appointment.js:244` (`get status()` with no setter), `src/domain/Appointment.js:145` (`#ensureScheduled`), `src/domain/time/TimeOfDay.js:13` and `:21` (`#minutes`, `Object.freeze(this)`), `src/domain/MedicalStaff.js:119` (returns a frozen copy of the working days), `src/auth/User.js` (password hash never exposed) |
 | **Inheritance** | `extends`, `super(...)` | `class Patient extends Person`, `class Doctor extends MedicalStaff`, each calling `super(props)`; error classes `ClinicError extends Error`; UI classes `PatientsPage extends ListPage extends BasePage`, `PatientDialog extends FormDialog extends BaseDialog`, `DataTable extends HTMLElement` | `src/domain/Patient.js:21`, `src/domain/MedicalStaff.js:29`, `src/domain/Doctor.js:10`, `src/domain/Dentist.js:9`, `src/domain/Nurse.js:10`, `src/domain/errors.js:10` and `:34`, `src/repositories/JsonFileRepository.js:20`, `public/app/pages/ListPage.js:13`, `public/app/components/dialogs/FormDialog.js:26`, `public/app/components/DataTable.js:38` |
-| **Polymorphism** | overriding; five overloaded `findAppointments(...)` | Overriding: `getConsultationFee()`, `getSlotDurationMinutes()`, `getDisplayName()`, `getDetails()`, `matches()`, `render()`/`refresh()`, `can()`. **JavaScript has no overloading**, so `findAppointments(criteria)` checks the argument's type at runtime (`CalendarDate`, `Patient`, `MedicalStaff`, `AppointmentStatus`, keyword string or criteria object) and runs the matching search. This is honest runtime dispatch, not true compile-time overloading. | `src/domain/Doctor.js:33`, `src/domain/Dentist.js:25`, `src/domain/Nurse.js:26` (three fees), `src/domain/Appointment.js:94` (`estimateFee` calls whichever override applies), `src/services/ClinicService.js:381` (`findAppointments`), `src/services/ClinicService.js:446` (`computeTotal` works on any `Billable`), `src/auth/AccessPolicy.js:49` (one `can()` call, three answers), `public/app/App.js:217` (the app calls `mount()` on whatever page is current) |
+| **Polymorphism** | overriding; five overloaded `findAppointments(...)` | Overriding: `getConsultationFee()`, `getSlotDurationMinutes()`, `getDisplayName()`, `getDetails()`, `matches()`, `render()`/`refresh()`, `can()`. **JavaScript has no overloading**, so `findAppointments(criteria)` checks the argument's type at runtime (`CalendarDate`, `Patient`, `MedicalStaff`, `AppointmentStatus`, keyword string or criteria object) and runs the matching search. This is honest runtime dispatch, not true compile-time overloading. | `src/domain/Doctor.js:33`, `src/domain/Dentist.js:25`, `src/domain/Nurse.js:26` (three fees), `src/domain/Appointment.js:94` (`estimateFee` calls whichever override applies), `src/services/ClinicService.js:381` (`findAppointments`), `src/services/ClinicService.js:446` (`computeTotal` works on any `Billable`), `src/auth/AccessPolicy.js:66` (one `can()` call, three answers), `public/app/App.js:217` (the app calls `mount()` on whatever page is current) |
 | **Abstraction** | `abstract` classes and `interface`s | Abstract classes refuse `new` with `if (new.target === Person) throw …`; abstract methods throw "must implement" until a subclass overrides them; "interfaces" are frozen contracts (`Identifiable`, `Searchable`, `Billable`) checked by `implementsInterface(obj, contract)`; `Repository` hides whether data is in memory, JSON files or SQLite | `src/domain/Person.js:42`, `src/domain/MedicalStaff.js:42` and `:60` (abstract `getConsultationFee`), `src/domain/contracts.js:45` (`implementsInterface`), `src/repositories/Repository.js:13`, `src/domain/time/Clock.js` (abstract `Clock`), `public/app/pages/BasePage.js:20`, `public/app/components/charts.js:12` |
 
 **Design patterns used:** Factory (`StaffFactory`, `AccessPolicy.for`), Repository, Observer
@@ -828,16 +833,15 @@ same validation messages appear before anything is sent. The server checks every
 
 ---
 
-## 9. Suggested Presentation Flow (7–10 minutes)
+## 9. Presentation Flow (7–10 minutes)
 
-1. **Problem and objectives** (1 min): sections 1 and 2.
-2. **Architecture** (1 min): section 3. One set of domain classes, used by both the server and the browser.
-3. **Class diagrams and the four pillars** (3 min): sections 4 and 5. Open `web/src/domain/MedicalStaff.js` and `Doctor.js` side by side.
-4. **Live demo** (3 min), signed in as `admin`:
-   - Register a patient, and show the inline validation of a wrong phone number.
-   - Book a dentist appointment. Point out that only open slots appear and the fee comes from the Dentist class.
-   - Try the same slot for another patient: it is not offered.
-   - Complete the visit with findings, then open the Records page and export the CSV.
-   - Open `/board` in another window, check a patient in and call them.
-   - Sign in as `drsantos` to show that a doctor sees only their own schedule.
-5. **Testing** (1 min): run `npm test` and show the number of passing tests.
+The word-for-word script, with timings, who speaks when, and what to prepare before recording, is in
+`docs/PRESENTATION-SCRIPT.md`. In short:
+
+| Time | Part | Speaker |
+|---|---|---|
+| 0:00–2:00 | Title and members, project overview, objectives | Lovelyn Genovania |
+| 2:00–4:00 | Class diagram explanation; Inheritance and Abstraction | Jun Dave Ofrin |
+| 4:00–5:30 | Encapsulation and Polymorphism | Yyah Jannah Pacia |
+| 5:30–8:30 | System demonstration (3 minutes, on the live site) | Andrei Joseph Palis |
+| 8:30–9:30 | Conclusion and each member's contribution | All four |

@@ -190,9 +190,13 @@ java -cp out clinic.Main
 
 | Name | Contribution |
 |---|---|
-| _Member 1_ | _Domain classes and objectives_ |
-| _Member 2_ | _Services, API, tests, class diagrams_ |
-| _Member 3_ | _User interface and system demo_ |
+| Lovelyn Genovania | Project overview and objectives; patient registration; documentation |
+| Jun Dave Ofrin | Medical personnel classes; UML class diagrams |
+| Yyah Jannah Pacia | Appointment scheduling, records and fees; automated tests |
+| Andrei Joseph Palis | Web interface; sign-in and roles; deployment; system demo |
+
+With the instructor's permission, this group has four members.
+The presentation script is in [`docs/PRESENTATION-SCRIPT.md`](docs/PRESENTATION-SCRIPT.md).
 
 ---
 Laguna State Polytechnic University · Object-Oriented Programming · Final Project
