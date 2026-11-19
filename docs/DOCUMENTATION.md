@@ -14,8 +14,7 @@ Laguna State Polytechnic University
 >
 > **Live system:** https://careconnect-web-qwno.onrender.com (the free server sleeps when idle; the first visit can take about a minute).
 
-> This branch (`javascript-version`) contains the web version in the `web/` folder. The original Java Swing
-> version is unchanged in `src/` (and on the `main` branch).
+> The web version is in the `web/` folder. The original Java Swing version is kept, unchanged, in `src/`.
 
 ---
 

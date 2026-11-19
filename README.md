@@ -5,11 +5,46 @@ records** in a clinic. It was built as the final project for **Object-Oriented P
 Laguna State Polytechnic University and demonstrates the four pillars of OOP: **Encapsulation, Inheritance,
 Polymorphism and Abstraction**.
 
-This branch (`javascript-version`) holds the **JavaScript web version** in [`web/`](web/). It runs in any
-browser and deploys to Render as a Node.js web service. The original **Java Swing desktop version** is still
-in [`src/`](src/) (see [Java desktop version](#java-desktop-version) below).
+The system is a **JavaScript web application** (Node.js + vanilla JavaScript) in [`web/`](web/). It runs in any
+browser and is deployed to Render as a Node.js web service with a Neon PostgreSQL database. The earlier **Java
+Swing desktop version** of the same system is kept in [`src/`](src/) (see
+[Java desktop version](#java-desktop-version) below).
+
+> ### Live system
+> **<https://careconnect-web-qwno.onrender.com>**
+>
+> - It is the official version: the clinic starts empty and there are no demo accounts. You sign in with an
+>   account created by the clinic's administrator.
+> - The free server sleeps when nobody uses it, so the **first visit can take about a minute** to load.
+> - To try it without an account, run the demo on your own computer: see [Run it on your computer](#run-it-on-your-computer).
 
 ![Dashboard](docs/screenshots/web/dashboard.png)
+
+## Using the website
+
+After signing in, the menu on the left shows only the pages your role may use.
+
+| Page | What you do there | Admin | Receptionist | Doctor |
+|---|---|:-:|:-:|:-:|
+| **Dashboard** | Today's schedule, staff on duty, fees collected, charts | ✔ | ✔ | ✔ (own) |
+| **Appointments** | Book an open slot, reschedule, cancel with a reason, mark no-show; complete a visit with findings (Admin and Doctor only) | ✔ | ✔ (cannot complete) | ✔ (own, cannot book) |
+| **Calendar** | Week view per staff member, day view for the clinic; drag to reschedule | ✔ | ✔ | ✔ (own) |
+| **Queue** | Check patients in and call the next one; opens the waiting-room board at `/board` | ✔ | ✔ | ✔ |
+| **Patients** | Register, edit, search, delete; open a patient's profile and visit timeline | ✔ | ✔ | view only (own patients) |
+| **Medical Staff** | Add and edit Doctors, Dentists and Nurses; activate or deactivate | ✔ | view only | view only |
+| **Records** | History of completed, cancelled and no-show visits; export CSV | ✔ | ✔ (no findings) | ✔ (own) |
+| **Audit Log** | Who changed what and when | ✔ | | |
+| **Accounts** | Create accounts, change roles, deactivate, reset passwords | ✔ | | |
+
+**First time on a new clinic (administrator):**
+
+1. Sign in with the administrator account set up on the server.
+2. Open **Medical Staff → Add staff** and add the doctors, dentists and nurses with their working days and shift.
+3. Open **Accounts → New account** and create sign-ins for the receptionists and doctors (a doctor's account is linked to their staff record).
+4. Open **Patients → Register patient**, then **Appointments → Book appointment**. Only open time slots are offered, so double booking is not possible.
+
+Press **Ctrl+K** to search or jump to any page, **Alt+N** to book an appointment, and use the key icon at the top to
+change your own password.
 
 ## Features
 
@@ -78,7 +113,7 @@ free **Neon** PostgreSQL database instead.
    **AWS US West 2 (Oregon)** (the same region as Render's default), and copy the **connection string**
    (it starts with `postgresql://` and ends with `?sslmode=require`).
 2. **Create the service.** In Render click **New + → Blueprint**, connect this repository and choose the
-   **`javascript-version`** branch. Render reads [`render.yaml`](render.yaml) and asks for three values:
+   **`main`** branch. Render reads [`render.yaml`](render.yaml) and asks for three values:
    - `DATABASE_URL`: the Neon connection string
    - `ADMIN_USERNAME`: the administrator's username, for example `owner`
    - `ADMIN_PASSWORD`: a private password of at least 10 characters
@@ -177,7 +212,8 @@ The full explanation with file and line references, and the UML class diagrams, 
 
 ## Java desktop version
 
-The original Java Swing version is unchanged in `src/clinic/` (and on the `main` branch).
+The original Java Swing version of the system is kept, unchanged, in `src/clinic/`. The web version above is
+a rebuild of it in JavaScript with the same features and business rules.
 
 **Requirement:** Java JDK 17 or newer. On Windows, double-click `run.bat`. On any OS:
 

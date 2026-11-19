@@ -1,5 +1,5 @@
 # Render Blueprint: deploys CareConnect (JavaScript version) as a Node web service.
-# In Render: New + -> Blueprint -> pick this repository and the `javascript-version` branch.
+# In Render: New + -> Blueprint -> pick this repository and the `main` branch.
 #
 # Official mode: the clinic starts empty, there are no demo accounts, and every
 # record is stored permanently in PostgreSQL (for example a free Neon database).
