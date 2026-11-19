@@ -3,3 +3,10 @@
 
 # JavaScript web version: keep LF line endings
 web/** text eol=lf
+
+# Old Java desktop version: leave it out of GitHub's language statistics
+src/** linguist-vendored
+*.bat linguist-vendored
+*.sh linguist-vendored
+# Docs and generated files
+docs/** linguist-documentation
