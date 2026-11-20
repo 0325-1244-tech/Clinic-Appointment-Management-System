@@ -18,9 +18,10 @@ import { User, UserRole } from './User.js';
 
 /** Demo-mode accounts. They exist only in demo mode, are kept in memory, and sit on made-up sample data. */
 export const DEMO_ACCOUNTS = Object.freeze(/** @type {AccountSeed[]} */ ([
-  { username: 'admin', displayName: 'Clinic Administrator', role: UserRole.ADMIN, demoPassword: 'admin123' },
-  { username: 'reception', displayName: 'Front Desk', role: UserRole.RECEPTIONIST, demoPassword: 'reception123' },
-  { username: 'drsantos', displayName: 'Dr. Maria Santos', role: UserRole.DOCTOR, staffId: 'S-0001', demoPassword: 'doctor123' },
+  { username: 'admin', displayName: 'Clinic Administrator', role: UserRole.ADMIN, demoPassword: 'admin12345' },
+  { username: 'reception', displayName: 'Front Desk', role: UserRole.RECEPTIONIST, demoPassword: 'helloworld123' },
+  { username: 'dr.mendoza', displayName: 'Dr. Carlo Mendoza', role: UserRole.DOCTOR, staffId: 'S-0004', demoPassword: 'helloworld123' },
+  { username: 'dr.ramos', displayName: 'Dr. Ana Villanueva', role: UserRole.DOCTOR, staffId: 'S-0003', demoPassword: 'helloworld123' },
 ]));
 
 /** Minimum length for real (non-demo) passwords. */
