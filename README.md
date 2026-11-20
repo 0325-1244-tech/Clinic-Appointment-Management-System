@@ -18,7 +18,7 @@ npm install
 npm run demo
 ```
 
-Open http://localhost:3000. Demo accounts: admin / admin123, reception / reception123, drsantos / doctor123.
+Open http://localhost:3000. Demo accounts: admin / admin12345, reception / helloworld123, dr.mendoza / helloworld123, dr.ramos / helloworld123.
 
 For real use, start with an empty clinic:
 
