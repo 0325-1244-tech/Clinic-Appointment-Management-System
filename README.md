@@ -11,7 +11,7 @@ Swing desktop version** of the same system is kept in [`src/`](src/) (see
 [Java desktop version](#java-desktop-version) below).
 
 > ### Live system
-> **<https://careconnect-web-qwno.onrender.com>**
+> **<https://careconnect-web-qwno.onrender.com/>**
 >
 > - It is the official version: the clinic starts empty and there are no demo accounts. You sign in with an
 >   account created by the clinic's administrator.
